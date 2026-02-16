@@ -7,6 +7,7 @@ export interface Env {
   RATE_LIMIT_MAX?: string;
   RATE_LIMIT_WINDOW_SEC?: string;
   RATE_LIMIT_SALT?: string;
+  ANON_ID_SECRET?: string;
   TURNSTILE_SITE_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;
   ALLOW_INSECURE_LOCAL_BYPASS?: string;

@@ -112,6 +112,7 @@ Optional safety env vars:
 - `EXPOSE_DEBUG_META=false` to hide internal meta in API responses.
 - `RATE_LIMIT_MAX=30` and `RATE_LIMIT_WINDOW_SEC=60` for per-IP throttling on `/api/ask`.
 - `RATE_LIMIT_SALT=...` to hash limiter keys (avoid storing raw IP identifiers in D1).
+- `ANON_ID_SECRET=...` to sign anonymous ID cookies and hash request metadata.
 - `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` to enforce bot checks on `/api/ask`.
 - `ALLOW_INSECURE_LOCAL_BYPASS=true` to bypass Turnstile in local/dev only (ignored in production).
 
@@ -154,6 +155,8 @@ Response includes:
 - API rejects oversized request bodies (`413`) to reduce abuse risk.
 - Per-IP rate limiting is stored in D1 (`rate_limit` table).
 - Rate-limit keys are SHA-256 hashed (with optional `RATE_LIMIT_SALT`).
+- Anonymous users are tracked with signed `sual_uid` cookies (no login required).
+- User input requests are logged in D1 (`guidance_request`) and linked to pseudonymous users (`anon_user`).
 - Turnstile token is verified server-side before retrieval/LLM work.
 - In `APP_ENV=production`, Turnstile becomes mandatory.
 - Local bypass is available only when not in production (`ALLOW_INSECURE_LOCAL_BYPASS=true`).

@@ -1,5 +1,6 @@
 import { HOME_CSP, HTML_HEADERS, SECURITY_HEADERS } from "./shared/constants";
 import { handleAsk } from "./handlers/ask";
+import { ensureAnonIdentity } from "./identity";
 import { json } from "./shared/http";
 import type { Env } from "./shared/types";
 import { renderHomePage } from "./ui/homePage";
@@ -10,11 +11,13 @@ export default {
 
     if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/about")) {
       const initialPage = url.pathname === "/about" ? "about" : "guide";
+      const identity = await ensureAnonIdentity(request, env);
       return new Response(renderHomePage(env, initialPage), {
         headers: {
           ...HTML_HEADERS,
           ...SECURITY_HEADERS,
           "content-security-policy": HOME_CSP,
+          ...(identity.setCookie ? { "set-cookie": identity.setCookie } : {}),
         },
       });
     }

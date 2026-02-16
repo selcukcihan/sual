@@ -281,6 +281,12 @@ export function renderClientScript(params: ClientScriptParams): string {
           body: JSON.stringify({ question, lang: locale(), turnstileToken })
         });
         const data = await resp.json();
+        if (TURNSTILE_ENABLED && resp.status === 400 && data && typeof data.error === 'string' && data.error.toLowerCase().includes('turnstile')) {
+          resetTurnstileWidget();
+        }
+        if (TURNSTILE_ENABLED && resp.status === 403 && data && typeof data.error === 'string' && data.error.toLowerCase().includes('turnstile')) {
+          resetTurnstileWidget();
+        }
         if (!resp.ok) {
           throw new Error(data && data.error ? data.error : ('HTTP ' + resp.status));
         }
@@ -289,9 +295,6 @@ export function renderClientScript(params: ClientScriptParams): string {
       } catch (err) {
         statusEl.textContent = 'Request failed: ' + (err && err.message ? err.message : String(err));
       } finally {
-        if (TURNSTILE_ENABLED) {
-          resetTurnstileWidget();
-        }
         submit.disabled = false;
       }
     });
