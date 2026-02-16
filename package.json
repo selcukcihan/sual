@@ -1,0 +1,24 @@
+{
+  "name": "sual-quran-agent",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=true XDG_CONFIG_HOME=.local/xdg/config XDG_STATE_HOME=.local/xdg/state XDG_CACHE_HOME=.local/xdg/cache WRANGLER_LOG_PATH=.local/wrangler/wrangler.log wrangler dev --local --log-level log",
+    "deploy": "wrangler deploy",
+    "check": "tsc --noEmit",
+    "d1:migrate:local": "XDG_CONFIG_HOME=.local/xdg/config XDG_STATE_HOME=.local/xdg/state XDG_CACHE_HOME=.local/xdg/cache WRANGLER_LOG_PATH=.local/wrangler/wrangler.log WRANGLER_LOG=error wrangler d1 migrations apply DB --local",
+    "d1:migrate:remote": "wrangler d1 migrations apply DB --remote",
+    "data:download:en": "curl -fL --retry 3 https://cdn.jsdelivr.net/npm/quran-json@3.1.2/dist/quran_en.json -o data/quran-en.full.json",
+    "data:download:tr": "curl -fL --retry 3 https://cdn.jsdelivr.net/npm/quran-json@3.1.2/dist/quran_tr.json -o data/quran-tr.full.json",
+    "d1:import": "node scripts/import-quran-json.mjs",
+    "d1:import:sample": "node scripts/import-quran-json.mjs data/quran-sample.en.json --local --truncate --source \"Sahih International\"",
+    "d1:import:tr": "node scripts/import-quran-json.mjs data/quran-tr.full.json --local --lang tr --source \"quran-json tr\"",
+    "d1:tag:local": "node scripts/tag-ayah-topics.mjs --local"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260208.0",
+    "typescript": "^5.8.2",
+    "wrangler": "^4.4.0"
+  }
+}
