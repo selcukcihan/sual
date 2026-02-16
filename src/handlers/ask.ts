@@ -1,6 +1,7 @@
-import { MAX_BODY_BYTES, MAX_QUESTION_CHARS } from "../shared/constants";
+import { GUIDANCE_CACHE_VERSION, MAX_BODY_BYTES, MAX_QUESTION_CHARS } from "../shared/constants";
 import { json, isJsonRequest, shouldExposeDebugMeta } from "../shared/http";
 import { generateGuidance } from "../guidance";
+import { getGuidanceCache, setGuidanceCache } from "../guidanceCache";
 import { ensureAnonIdentity } from "../identity";
 import { logGuidanceRequest } from "../requestLogging";
 import { retrieveAyat } from "../retrieval";
@@ -87,6 +88,37 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
     );
   }
 
+  const model = env.OPENAI_MODEL || "gpt-4.1-nano";
+  const canUseCache = Boolean(env.OPENAI_API_KEY);
+  if (canUseCache) {
+    const cached = await getGuidanceCache(env.DB, {
+      question,
+      lang,
+      model,
+      cacheVersion: GUIDANCE_CACHE_VERSION,
+    });
+    if (cached) {
+      const payload: Record<string, unknown> = { ...cached.payload };
+      if (shouldExposeDebugMeta(env)) {
+        payload.meta = {
+          llm_used: true,
+          llm_error: null,
+          rate_limit: {
+            count: rateResult.count,
+            max: rateResult.max,
+            window_sec: rateResult.windowSec,
+          },
+          cache_hit: true,
+          cache_created_at: cached.createdAt,
+        };
+      }
+      return respond(payload, 200, "cache_hit", {
+        llmUsed: true,
+        retrievedCount: extractRetrievedCount(payload),
+      });
+    }
+  }
+
   const retrieved = await retrieveAyat(env.DB, question, 8, lang);
 
   if (retrieved.length === 0) {
@@ -119,6 +151,16 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
     retrieved,
   };
 
+  if (canUseCache && guidanceResult.llmUsed) {
+    await setGuidanceCache(env.DB, env, {
+      question,
+      lang,
+      model,
+      cacheVersion: GUIDANCE_CACHE_VERSION,
+      payload,
+    });
+  }
+
   if (shouldExposeDebugMeta(env)) {
     payload.meta = {
       llm_used: guidanceResult.llmUsed,
@@ -128,6 +170,7 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
         max: rateResult.max,
         window_sec: rateResult.windowSec,
       },
+      cache_hit: false,
     };
   }
 
@@ -136,4 +179,12 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
     llmError: guidanceResult.llmError,
     retrievedCount: retrieved.length,
   });
+}
+
+function extractRetrievedCount(payload: Record<string, unknown>): number | undefined {
+  const retrieved = payload.retrieved;
+  if (Array.isArray(retrieved)) {
+    return retrieved.length;
+  }
+  return undefined;
 }

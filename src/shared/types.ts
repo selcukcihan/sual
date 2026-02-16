@@ -2,6 +2,7 @@ export interface Env {
   DB: D1Database;
   OPENAI_API_KEY?: string;
   OPENAI_MODEL?: string;
+  CACHE_TTL_SEC?: string;
   APP_ENV?: string;
   EXPOSE_DEBUG_META?: string;
   RATE_LIMIT_MAX?: string;
