@@ -421,3 +421,21 @@ function containsDivineWrathPattern(tokens: Set<string>): boolean {
   return hasAllah && hasAnger && !hasPracticalEthics;
 }
 
+export async function getAyatByIds(db: D1Database, ids: number[], lang: string): Promise<AyahRow[]> {
+  if (!Array.isArray(ids) || ids.length === 0) return [];
+  const cleanIds = Array.from(new Set(ids.filter((id) => Number.isInteger(id) && id > 0)));
+  if (cleanIds.length === 0) return [];
+
+  const placeholders = cleanIds.map(() => "?").join(", ");
+  const textField = lang === "tr" ? "coalesce(text_tr, text_en)" : "text_en";
+  const sql = `
+    SELECT id, surah, ayah, ${textField} AS text_en, source
+    FROM ayah
+    WHERE id IN (${placeholders})
+  `;
+
+  const result = await db.prepare(sql).bind(...cleanIds).all<AyahRow>();
+  const rows = result.results || [];
+  const byId = new Map<number, AyahRow>(rows.map((r) => [r.id, r]));
+  return cleanIds.map((id) => byId.get(id)).filter((row): row is AyahRow => !!row);
+}

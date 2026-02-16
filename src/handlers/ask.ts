@@ -1,12 +1,18 @@
-import { GUIDANCE_CACHE_VERSION, MAX_BODY_BYTES, MAX_QUESTION_CHARS } from "../shared/constants";
+import {
+  GUIDANCE_CACHE_VERSION,
+  MAX_BODY_BYTES,
+  MAX_QUESTION_CHARS,
+  RETRIEVAL_CACHE_VERSION,
+} from "../shared/constants";
 import { json, isJsonRequest, shouldExposeDebugMeta } from "../shared/http";
 import { generateGuidance } from "../guidance";
 import { getGuidanceCache, setGuidanceCache } from "../guidanceCache";
 import { ensureAnonIdentity } from "../identity";
 import { logGuidanceRequest } from "../requestLogging";
-import { retrieveAyat } from "../retrieval";
+import { getAyatByIds, retrieveAyat } from "../retrieval";
+import { getRetrievalCache, setRetrievalCache } from "../retrievalCache";
 import { applyRateLimit, verifyTurnstile } from "../security";
-import type { Env } from "../shared/types";
+import type { AyahRow, Env } from "../shared/types";
 
 export async function handleAsk(request: Request, env: Env): Promise<Response> {
   const identity = await ensureAnonIdentity(request, env);
@@ -110,6 +116,7 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
           },
           cache_hit: true,
           cache_created_at: cached.createdAt,
+          retrieval_cache_hit: null,
         };
       }
       return respond(payload, 200, "cache_hit", {
@@ -119,7 +126,31 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
     }
   }
 
-  const retrieved = await retrieveAyat(env.DB, question, 8, lang);
+  let retrieved: AyahRow[] = [];
+  let retrievalCacheHit = false;
+  const cachedAyahIds = await getRetrievalCache(env.DB, {
+    question,
+    lang,
+    cacheVersion: RETRIEVAL_CACHE_VERSION,
+  });
+  if (cachedAyahIds && cachedAyahIds.length > 0) {
+    const cachedRows = await getAyatByIds(env.DB, cachedAyahIds, lang);
+    if (cachedRows.length > 0) {
+      retrieved = cachedRows;
+      retrievalCacheHit = true;
+    }
+  }
+  if (retrieved.length === 0) {
+    retrieved = await retrieveAyat(env.DB, question, 8, lang);
+    if (retrieved.length > 0) {
+      await setRetrievalCache(env.DB, env, {
+        question,
+        lang,
+        cacheVersion: RETRIEVAL_CACHE_VERSION,
+        ayahIds: retrieved.map((r) => r.id),
+      });
+    }
+  }
 
   if (retrieved.length === 0) {
     return respond(
@@ -171,6 +202,7 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
         window_sec: rateResult.windowSec,
       },
       cache_hit: false,
+      retrieval_cache_hit: retrievalCacheHit,
     };
   }
 

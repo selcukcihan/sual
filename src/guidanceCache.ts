@@ -101,9 +101,27 @@ export async function setGuidanceCache(
 }
 
 export function normalizeQuestionForCache(value: string): string {
-  return String(value || "")
-    .toLowerCase()
+  let text = String(value || "");
+  text = text
     .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/[’`]/g, "'")
+    .replace(/İ/g, "I")
+    .replace(/ı/g, "i")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "");
+
+  // Strip common filler phrasing that doesn't materially change intent.
+  const fillerPatterns = [
+    /\b(?:please|pls|can you|could you|would you|help me|i need help|quick question)\b/g,
+    /\b(?:lutfen|lütfen|yardim eder misin|yardım eder misin|bir soru|kisa bir soru|kısa bir soru)\b/g,
+  ];
+  for (const pattern of fillerPatterns) {
+    text = text.replace(pattern, " ");
+  }
+
+  return text
+    .replace(/[^a-z0-9\s]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 2000);

@@ -114,6 +114,7 @@ Optional safety env vars:
 - `RATE_LIMIT_SALT=...` to hash limiter keys (avoid storing raw IP identifiers in D1).
 - `ANON_ID_SECRET=...` to sign anonymous ID cookies and hash request metadata.
 - `CACHE_TTL_SEC=1209600` to control D1 guidance response cache TTL (default: 14 days).
+- `RETRIEVAL_CACHE_TTL_SEC=604800` to control D1 retrieval cache TTL (default: 7 days).
 - `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` to enforce bot checks on `/api/ask`.
 - `ALLOW_INSECURE_LOCAL_BYPASS=true` to bypass Turnstile in local/dev only (ignored in production).
 
@@ -159,6 +160,7 @@ Response includes:
 - Anonymous users are tracked with signed `sual_uid` cookies (no login required).
 - User input requests are logged in D1 (`guidance_request`) and linked to pseudonymous users (`anon_user`).
 - Repeated prompts are served from D1 cache (`guidance_cache`) to avoid repeated LLM calls.
+- Top ayah retrieval results are also cached in D1 (`retrieval_cache`) for faster repeated semantic lookups.
 - Turnstile token is verified server-side before retrieval/LLM work.
 - In `APP_ENV=production`, Turnstile becomes mandatory.
 - Local bypass is available only when not in production (`ALLOW_INSECURE_LOCAL_BYPASS=true`).
