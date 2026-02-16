@@ -1,6 +1,8 @@
 name = "sual-quran-agent"
 main = "src/index.ts"
 compatibility_date = "2026-02-16"
+workers_dev = false
+preview_urls = false
 
 [observability]
 enabled = true
@@ -8,10 +10,10 @@ enabled = true
 [vars]
 # Set from Cloudflare dashboard/wrangler for Turnstile widget rendering.
 # Keep TURNSTILE_SECRET_KEY as a secret, not in this file.
-TURNSTILE_SITE_KEY = ""
+TURNSTILE_SITE_KEY = "0x4AAAAAACd4skHu5bvjAgWk"
 
 [[d1_databases]]
 binding = "DB"
 database_name = "quran-db"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "912a1da0-d4ac-4339-a111-28b9c454fbb1"
 migrations_dir = "migrations"

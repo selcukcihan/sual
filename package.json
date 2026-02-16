@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "CLOUDFLARE_LOAD_DEV_VARS_FROM_DOT_ENV=true XDG_CONFIG_HOME=.local/xdg/config XDG_STATE_HOME=.local/xdg/state XDG_CACHE_HOME=.local/xdg/cache WRANGLER_LOG_PATH=.local/wrangler/wrangler.log wrangler dev --local --log-level log",
-    "deploy": "wrangler deploy",
+    "dev": "XDG_CONFIG_HOME=.local/xdg/config XDG_STATE_HOME=.local/xdg/state XDG_CACHE_HOME=.local/xdg/cache WRANGLER_LOG_PATH=.local/wrangler/wrangler.log wrangler dev --local --log-level log --env-file .env.local",
+    "deploy": "wrangler deploy --env-file .env.prod",
     "check": "tsc --noEmit",
     "d1:migrate:local": "XDG_CONFIG_HOME=.local/xdg/config XDG_STATE_HOME=.local/xdg/state XDG_CACHE_HOME=.local/xdg/cache WRANGLER_LOG_PATH=.local/wrangler/wrangler.log WRANGLER_LOG=error wrangler d1 migrations apply DB --local",
     "d1:migrate:remote": "wrangler d1 migrations apply DB --remote",

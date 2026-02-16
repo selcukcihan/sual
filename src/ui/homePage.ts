@@ -8,7 +8,9 @@ import { HOME_PAGE_STYLES } from "./styles";
 
 export function renderHomePage(env: Env, initialPage: "guide" | "about"): string {
   const turnstileSiteKey = (env.TURNSTILE_SITE_KEY || "").trim();
-  const turnstileConfigured = Boolean(turnstileSiteKey);
+  const isProduction = (env.APP_ENV || "").toLowerCase() === "production";
+  const allowInsecureLocalBypass = !isProduction && isTruthy(env.ALLOW_INSECURE_LOCAL_BYPASS);
+  const turnstileEnabled = Boolean(turnstileSiteKey) && !allowInsecureLocalBypass;
 
   return `<!doctype html>
 <html lang="en">
@@ -30,11 +32,16 @@ ${renderAboutPage()}
   <script>
 ${renderClientScript({
   turnstileSiteKey,
-  turnstileEnabled: turnstileConfigured,
+  turnstileEnabled,
   initialPage,
   i18n: UI_I18N,
 })}
   </script>
 </body>
 </html>`;
+}
+
+function isTruthy(value: string | undefined): boolean {
+  const normalized = (value || "").trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
 }

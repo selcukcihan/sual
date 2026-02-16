@@ -4,10 +4,16 @@ import type { Env } from "./shared/types";
 export type TurnstileResult = { ok: boolean; statusCode?: number; message?: string };
 
 export async function verifyTurnstile(token: string, request: Request, env: Env): Promise<TurnstileResult> {
+  const production = isProduction(env);
+  const allowInsecureLocalBypass = !production && isTruthy(env.ALLOW_INSECURE_LOCAL_BYPASS);
+  if (allowInsecureLocalBypass) {
+    return { ok: true };
+  }
+
   const siteKey = (env.TURNSTILE_SITE_KEY || "").trim();
   const secretKey = (env.TURNSTILE_SECRET_KEY || "").trim();
   const turnstileConfigured = Boolean(siteKey && secretKey);
-  const required = isProduction(env) || Boolean(siteKey || secretKey);
+  const required = production || Boolean(siteKey || secretKey);
 
   if (!required) {
     return { ok: true };
@@ -112,4 +118,9 @@ async function stableRateLimitKey(ip: string, salt: string): Promise<string> {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
   const bytes = Array.from(new Uint8Array(digest)).slice(0, 16);
   return bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function isTruthy(value: string | undefined): boolean {
+  const normalized = (value || "").trim().toLowerCase();
+  return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
 }

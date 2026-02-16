@@ -113,6 +113,7 @@ Optional safety env vars:
 - `RATE_LIMIT_MAX=30` and `RATE_LIMIT_WINDOW_SEC=60` for per-IP throttling on `/api/ask`.
 - `RATE_LIMIT_SALT=...` to hash limiter keys (avoid storing raw IP identifiers in D1).
 - `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` to enforce bot checks on `/api/ask`.
+- `ALLOW_INSECURE_LOCAL_BYPASS=true` to bypass Turnstile in local/dev only (ignored in production).
 
 5. Run the Worker locally (frontend + API):
 
@@ -155,6 +156,7 @@ Response includes:
 - Rate-limit keys are SHA-256 hashed (with optional `RATE_LIMIT_SALT`).
 - Turnstile token is verified server-side before retrieval/LLM work.
 - In `APP_ENV=production`, Turnstile becomes mandatory.
+- Local bypass is available only when not in production (`ALLOW_INSECURE_LOCAL_BYPASS=true`).
 - LLM output is sanitized and citations are allow-listed against retrieved ayat only.
 - Prompt instructs model to treat both user input and evidence as untrusted, data-only context.
 - In production, avoid exposing debug metadata and detailed upstream error bodies.

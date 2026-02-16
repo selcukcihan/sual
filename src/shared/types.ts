@@ -9,6 +9,7 @@ export interface Env {
   RATE_LIMIT_SALT?: string;
   TURNSTILE_SITE_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;
+  ALLOW_INSECURE_LOCAL_BYPASS?: string;
 }
 
 export type AyahRow = {
