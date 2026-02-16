@@ -1,5 +1,5 @@
 import { MAX_ACTIONS, MAX_ANSWER_CHARS, MAX_PRINCIPLES } from "./shared/constants";
-import { isProduction } from "./shared/http";
+import { isProduction, parsePositiveInt } from "./shared/http";
 import type { AyahRow, Env, GuidanceResponse, GuidanceResult } from "./shared/types";
 
 export async function generateGuidance(question: string, ayat: AyahRow[], env: Env, lang: string): Promise<GuidanceResult> {
@@ -43,23 +43,35 @@ export async function generateGuidance(question: string, ayat: AyahRow[], env: E
     "Disclaimer must state this is guidance support and not a fatwa.",
   ].join("\n\n");
 
-  const resp = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.OPENAI_API_KEY}`,
-      "content-type": "application/json",
-    },
-    body: JSON.stringify({
-      model,
-      temperature: 0.2,
-      max_tokens: 700,
-      response_format: { type: "json_object" },
-      messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: userPrompt },
-      ],
-    }),
-  });
+  const timeoutMs = parsePositiveInt(env.OPENAI_TIMEOUT_MS, 15_000);
+  let resp: Response;
+  try {
+    resp = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.OPENAI_API_KEY}`,
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model,
+        temperature: 0.2,
+        max_tokens: 700,
+        response_format: { type: "json_object" },
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+      }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+  } catch (err) {
+    const timedOut = err instanceof Error && (err.name === "TimeoutError" || err.name === "AbortError");
+    return {
+      guidance: heuristicGuidance(question, ayat, lang),
+      llmUsed: false,
+      llmError: timedOut ? `OpenAI request timeout after ${timeoutMs}ms` : "OpenAI request failed",
+    };
+  }
   if (!isProduction(env)) {
     console.log(`[openai] chat.completions status=${resp.status} ${resp.statusText}`);
   }
@@ -222,4 +234,3 @@ function normalizeCitationRef(ref: string): string | null {
   const clean = ref.trim().replace(/\s+/g, "");
   return /^\d{1,3}:\d{1,3}$/.test(clean) ? clean : null;
 }
-

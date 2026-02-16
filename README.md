@@ -115,7 +115,9 @@ Optional safety env vars:
 - `ANON_ID_SECRET=...` to sign anonymous ID cookies and hash request metadata.
 - `CACHE_TTL_SEC=1209600` to control D1 guidance response cache TTL (default: 14 days).
 - `RETRIEVAL_CACHE_TTL_SEC=604800` to control D1 retrieval cache TTL (default: 7 days).
+- `OPENAI_TIMEOUT_MS=15000` to cap upstream OpenAI request latency.
 - `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` to enforce bot checks on `/api/ask`.
+- `TURNSTILE_EXPECTED_HOSTNAME` and `TURNSTILE_EXPECTED_ACTION` for strict Turnstile verification.
 - `ALLOW_INSECURE_LOCAL_BYPASS=true` to bypass Turnstile in local/dev only (ignored in production).
 
 5. Run the Worker locally (frontend + API):
@@ -159,9 +161,10 @@ Response includes:
 - Rate-limit keys are SHA-256 hashed (with optional `RATE_LIMIT_SALT`).
 - Anonymous users are tracked with signed `sual_uid` cookies (no login required).
 - User input requests are logged in D1 (`guidance_request`) and linked to pseudonymous users (`anon_user`).
-- Repeated prompts are served from D1 cache (`guidance_cache`) to avoid repeated LLM calls.
+- Repeated prompts are served from D1 cache (`guidance_cache`) to avoid repeated LLM calls (scoped per anonymous user).
 - Top ayah retrieval results are also cached in D1 (`retrieval_cache`) for faster repeated semantic lookups.
 - Turnstile token is verified server-side before retrieval/LLM work.
+- Turnstile verification checks success + expected hostname + expected action.
 - In `APP_ENV=production`, Turnstile becomes mandatory.
 - Local bypass is available only when not in production (`ALLOW_INSECURE_LOCAL_BYPASS=true`).
 - LLM output is sanitized and citations are allow-listed against retrieved ayat only.

@@ -2,6 +2,7 @@ export interface Env {
   DB: D1Database;
   OPENAI_API_KEY?: string;
   OPENAI_MODEL?: string;
+  OPENAI_TIMEOUT_MS?: string;
   CACHE_TTL_SEC?: string;
   RETRIEVAL_CACHE_TTL_SEC?: string;
   APP_ENV?: string;
@@ -12,6 +13,8 @@ export interface Env {
   ANON_ID_SECRET?: string;
   TURNSTILE_SITE_KEY?: string;
   TURNSTILE_SECRET_KEY?: string;
+  TURNSTILE_EXPECTED_HOSTNAME?: string;
+  TURNSTILE_EXPECTED_ACTION?: string;
   ALLOW_INSECURE_LOCAL_BYPASS?: string;
 }
 

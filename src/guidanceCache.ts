@@ -8,11 +8,11 @@ export type CachedGuidance = {
 
 export async function getGuidanceCache(
   db: D1Database,
-  input: { question: string; lang: string; model: string; cacheVersion: string }
+  input: { question: string; lang: string; model: string; cacheVersion: string; scopeKey: string }
 ): Promise<CachedGuidance | null> {
   const nowSec = Math.floor(Date.now() / 1000);
   const questionNorm = normalizeQuestionForCache(input.question);
-  const key = await buildCacheKey(questionNorm, input.lang, input.model, input.cacheVersion);
+  const key = await buildCacheKey(questionNorm, input.lang, input.model, input.cacheVersion, input.scopeKey);
 
   const row = await db
     .prepare(
@@ -34,7 +34,7 @@ export async function getGuidanceCache(
     return null;
   }
 
-  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+  if (!isValidCachedPayload(payload)) {
     return null;
   }
 
@@ -62,6 +62,7 @@ export async function setGuidanceCache(
     lang: string;
     model: string;
     cacheVersion: string;
+    scopeKey: string;
     payload: Record<string, unknown>;
   }
 ): Promise<void> {
@@ -69,7 +70,7 @@ export async function setGuidanceCache(
   const ttlSec = parsePositiveInt(env.CACHE_TTL_SEC, 60 * 60 * 24 * 14);
   const expiresAt = nowSec + ttlSec;
   const questionNorm = normalizeQuestionForCache(input.question);
-  const key = await buildCacheKey(questionNorm, input.lang, input.model, input.cacheVersion);
+  const key = await buildCacheKey(questionNorm, input.lang, input.model, input.cacheVersion, input.scopeKey);
 
   if (Math.random() < 0.02) {
     await db.prepare(`DELETE FROM guidance_cache WHERE expires_at < ?`).bind(nowSec).run();
@@ -127,8 +128,14 @@ export function normalizeQuestionForCache(value: string): string {
     .slice(0, 2000);
 }
 
-async function buildCacheKey(questionNorm: string, lang: string, model: string, cacheVersion: string): Promise<string> {
-  const base = `${cacheVersion}|${normalizeLang(lang)}|${model}|${questionNorm}`;
+async function buildCacheKey(
+  questionNorm: string,
+  lang: string,
+  model: string,
+  cacheVersion: string,
+  scopeKey: string
+): Promise<string> {
+  const base = `${cacheVersion}|${normalizeLang(lang)}|${model}|${scopeKey}|${questionNorm}`;
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(base));
   const bytes = Array.from(new Uint8Array(digest));
   return bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -136,4 +143,16 @@ async function buildCacheKey(questionNorm: string, lang: string, model: string, 
 
 function normalizeLang(value: string): string {
   return value === "en" ? "en" : "tr";
+}
+
+function isValidCachedPayload(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const obj = value as Record<string, unknown>;
+  if (typeof obj.answer !== "string") return false;
+  if (!Array.isArray(obj.principles)) return false;
+  if (!Array.isArray(obj.actions)) return false;
+  if (typeof obj.disclaimer !== "string") return false;
+  if (!Array.isArray(obj.citations)) return false;
+  if (!Array.isArray(obj.retrieved)) return false;
+  return true;
 }

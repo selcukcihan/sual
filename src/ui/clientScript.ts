@@ -160,7 +160,8 @@ export function renderClientScript(params: ClientScriptParams): string {
       }
       turnstileWidgetId = window.turnstile.render('#turnstile-wrap', {
         sitekey: TURNSTILE_SITE_KEY,
-        theme: 'light'
+        theme: 'light',
+        action: 'ask_guidance'
       });
     }
 

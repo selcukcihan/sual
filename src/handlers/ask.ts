@@ -65,16 +65,15 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
   let lang = "tr";
   let turnstileToken = "";
 
-  try {
-    const body = (await request.json()) as { question?: string; lang?: string; turnstileToken?: string };
-    question = (body.question || "").trim();
-    lang = body.lang === "en" ? "en" : "tr";
-    requestLang = lang;
-    rawQuestion = question;
-    turnstileToken = (body.turnstileToken || "").trim();
-  } catch {
-    return respond({ error: "Invalid JSON body" }, 400, "invalid_json");
+  const parsedBody = await readJsonBodyWithLimit(request, MAX_BODY_BYTES);
+  if (!parsedBody.ok) {
+    return respond({ error: parsedBody.error }, parsedBody.status, "invalid_json");
   }
+  question = (parsedBody.body.question || "").trim();
+  lang = parsedBody.body.lang === "en" ? "en" : "tr";
+  requestLang = lang;
+  rawQuestion = question;
+  turnstileToken = (parsedBody.body.turnstileToken || "").trim();
 
   if (!question) {
     return respond({ error: "Question is required" }, 400, "empty_question");
@@ -102,6 +101,7 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
       lang,
       model,
       cacheVersion: GUIDANCE_CACHE_VERSION,
+      scopeKey: identity.anonId,
     });
     if (cached) {
       const payload: Record<string, unknown> = { ...cached.payload };
@@ -188,6 +188,7 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
       lang,
       model,
       cacheVersion: GUIDANCE_CACHE_VERSION,
+      scopeKey: identity.anonId,
       payload,
     });
   }
@@ -219,4 +220,49 @@ function extractRetrievedCount(payload: Record<string, unknown>): number | undef
     return retrieved.length;
   }
   return undefined;
+}
+
+async function readJsonBodyWithLimit(
+  request: Request,
+  maxBytes: number
+): Promise<
+  | { ok: true; body: { question?: string; lang?: string; turnstileToken?: string } }
+  | { ok: false; status: number; error: string }
+> {
+  const stream = request.body;
+  if (!stream) {
+    return { ok: false, status: 400, error: "Invalid JSON body" };
+  }
+
+  const reader = stream.getReader();
+  const decoder = new TextDecoder();
+  let total = 0;
+  let raw = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+      total += value.byteLength;
+      if (total > maxBytes) {
+        await reader.cancel();
+        return { ok: false, status: 413, error: `Request body exceeds ${maxBytes} bytes` };
+      }
+      raw += decoder.decode(value, { stream: true });
+    }
+    raw += decoder.decode();
+  } catch {
+    return { ok: false, status: 400, error: "Invalid JSON body" };
+  }
+
+  try {
+    const body = JSON.parse(raw) as { question?: string; lang?: string; turnstileToken?: string };
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return { ok: false, status: 400, error: "Invalid JSON body" };
+    }
+    return { ok: true, body };
+  } catch {
+    return { ok: false, status: 400, error: "Invalid JSON body" };
+  }
 }

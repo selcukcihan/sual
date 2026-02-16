@@ -60,6 +60,10 @@ export async function verifyTurnstile(token: string, request: Request, env: Env)
 
   const verification = (await resp.json()) as {
     success?: boolean;
+    hostname?: string;
+    action?: string;
+    cdata?: string;
+    "error-codes"?: string[];
   };
 
   if (!verification.success) {
@@ -68,6 +72,30 @@ export async function verifyTurnstile(token: string, request: Request, env: Env)
       statusCode: 403,
       message: "Turnstile validation failed.",
     };
+  }
+
+  const expectedHostname = (env.TURNSTILE_EXPECTED_HOSTNAME || new URL(request.url).hostname).trim().toLowerCase();
+  if (expectedHostname) {
+    const actualHostname = (verification.hostname || "").trim().toLowerCase();
+    if (!actualHostname || actualHostname !== expectedHostname) {
+      return {
+        ok: false,
+        statusCode: 403,
+        message: "Turnstile hostname mismatch.",
+      };
+    }
+  }
+
+  const expectedAction = (env.TURNSTILE_EXPECTED_ACTION || "ask_guidance").trim();
+  if (expectedAction) {
+    const actualAction = (verification.action || "").trim();
+    if (!actualAction || actualAction !== expectedAction) {
+      return {
+        ok: false,
+        statusCode: 403,
+        message: "Turnstile action mismatch.",
+      };
+    }
   }
 
   return { ok: true };
