@@ -1,0 +1,39 @@
+export type UiLocale = "en" | "tr";
+
+export type UiStrings = {
+  title: string;
+  subtitle: string;
+  navGuide: string;
+  navAbout: string;
+  langLabel: string;
+  situation: string;
+  guidance: string;
+  principles: string;
+  actions: string;
+  evidence: string;
+  about: string;
+  aboutP1: string;
+  aboutSourceLabel: string;
+  sourceLinkText: string;
+  tanzilLabel: string;
+  tanzilLinkText: string;
+  aboutP2: string;
+  aboutP3: string;
+  aboutP4: string;
+  aboutP5: string;
+  aboutP6: string;
+  aboutP7: string;
+  evidenceEmpty: string;
+  placeholder: string;
+  ask: string;
+  ready: string;
+  analyzing: string;
+  empty: string;
+  captchaMissing: string;
+  done: string;
+  qPlaceholder: string;
+  open: string;
+  tanzil: string;
+};
+
+export type UiI18nMap = Record<UiLocale, UiStrings>;
