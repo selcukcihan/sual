@@ -164,6 +164,25 @@ export function renderClientScript(params: ClientScriptParams): string {
       });
     }
 
+    function readTurnstileToken() {
+      if (!window.turnstile) return '';
+      try {
+        if (turnstileWidgetId !== null && turnstileWidgetId !== undefined) {
+          return window.turnstile.getResponse(turnstileWidgetId) || '';
+        }
+      } catch {}
+      return '';
+    }
+
+    function resetTurnstileWidget() {
+      if (!window.turnstile) return;
+      try {
+        if (turnstileWidgetId !== null && turnstileWidgetId !== undefined) {
+          window.turnstile.reset(turnstileWidgetId);
+        }
+      } catch {}
+    }
+
     function citationChip(ref) {
       return '<a class="chip" href="' + tanzilUrl(ref) + '" target="_blank" rel="noopener noreferrer">' + ref + '</a>';
     }
@@ -248,7 +267,7 @@ export function renderClientScript(params: ClientScriptParams): string {
             submit.disabled = false;
             return;
           }
-          turnstileToken = window.turnstile.getResponse(turnstileWidgetId) || '';
+          turnstileToken = readTurnstileToken();
           if (!turnstileToken) {
             statusEl.textContent = t().captchaMissing;
             submit.disabled = false;
@@ -270,8 +289,8 @@ export function renderClientScript(params: ClientScriptParams): string {
       } catch (err) {
         statusEl.textContent = 'Request failed: ' + (err && err.message ? err.message : String(err));
       } finally {
-        if (TURNSTILE_ENABLED && window.turnstile && turnstileWidgetId !== null) {
-          window.turnstile.reset(turnstileWidgetId);
+        if (TURNSTILE_ENABLED) {
+          resetTurnstileWidget();
         }
         submit.disabled = false;
       }

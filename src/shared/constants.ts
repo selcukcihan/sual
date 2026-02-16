@@ -14,4 +14,4 @@ export const SECURITY_HEADERS = {
 };
 
 export const HOME_CSP =
-  "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://challenges.cloudflare.com; img-src 'self' data:; frame-src https://challenges.cloudflare.com;";
+  "default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; connect-src 'self' https://challenges.cloudflare.com https://cloudflareinsights.com; img-src 'self' data:; frame-src https://challenges.cloudflare.com;";

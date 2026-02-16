@@ -195,7 +195,10 @@ async function main() {
   }
 
   const sqlParts = [];
-  sqlParts.push("BEGIN TRANSACTION;");
+  const useExplicitTransaction = mode !== "--remote";
+  if (useExplicitTransaction) {
+    sqlParts.push("BEGIN TRANSACTION;");
+  }
   if (truncate) {
     sqlParts.push("DELETE FROM ayah;");
   }
@@ -230,7 +233,9 @@ async function main() {
     }
   }
 
-  sqlParts.push("COMMIT;");
+  if (useExplicitTransaction) {
+    sqlParts.push("COMMIT;");
+  }
 
   const outFile = path.resolve(process.cwd(), ".local/import-quran.sql");
   await fs.mkdir(path.dirname(outFile), { recursive: true });

@@ -17,8 +17,12 @@ function sqlEscape(value) {
   return value.replace(/'/g, "''");
 }
 
-function buildSql() {
-  const parts = ["BEGIN TRANSACTION;", "DELETE FROM ayah_topic;"];
+function buildSql(useExplicitTransaction) {
+  const parts = [];
+  if (useExplicitTransaction) {
+    parts.push("BEGIN TRANSACTION;");
+  }
+  parts.push("DELETE FROM ayah_topic;");
 
   for (const topic of Object.keys(TOPIC_RULES)) {
     parts.push(`INSERT OR IGNORE INTO topic (name) VALUES ('${sqlEscape(topic)}');`);
@@ -38,7 +42,9 @@ function buildSql() {
     `);
   }
 
-  parts.push("COMMIT;");
+  if (useExplicitTransaction) {
+    parts.push("COMMIT;");
+  }
   return parts.join("\n");
 }
 
@@ -54,12 +60,13 @@ function run(cmd, args, env = process.env) {
 
 async function main() {
   const mode = process.argv.includes("--remote") ? "--remote" : "--local";
+  const useExplicitTransaction = mode !== "--remote";
   const dbIdx = process.argv.indexOf("--db");
   const dbBinding = dbIdx >= 0 ? process.argv[dbIdx + 1] || "DB" : "DB";
 
   const outFile = path.resolve(process.cwd(), ".local/tag-ayah-topics.sql");
   await fs.mkdir(path.dirname(outFile), { recursive: true });
-  await fs.writeFile(outFile, buildSql(), "utf8");
+  await fs.writeFile(outFile, buildSql(useExplicitTransaction), "utf8");
 
   const env = {
     ...process.env,

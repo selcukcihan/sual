@@ -12,9 +12,12 @@
     "data:download:en": "curl -fL --retry 3 https://cdn.jsdelivr.net/npm/quran-json@3.1.2/dist/quran_en.json -o data/quran-en.full.json",
     "data:download:tr": "curl -fL --retry 3 https://cdn.jsdelivr.net/npm/quran-json@3.1.2/dist/quran_tr.json -o data/quran-tr.full.json",
     "d1:import": "node scripts/import-quran-json.mjs",
+    "d1:import:en:remote": "node scripts/import-quran-json.mjs data/quran-en.full.json --remote --truncate --source \"quran-json en\"",
     "d1:import:sample": "node scripts/import-quran-json.mjs data/quran-sample.en.json --local --truncate --source \"Sahih International\"",
     "d1:import:tr": "node scripts/import-quran-json.mjs data/quran-tr.full.json --local --lang tr --source \"quran-json tr\"",
-    "d1:tag:local": "node scripts/tag-ayah-topics.mjs --local"
+    "d1:import:tr:remote": "node scripts/import-quran-json.mjs data/quran-tr.full.json --remote --lang tr --source \"quran-json tr\"",
+    "d1:tag:local": "node scripts/tag-ayah-topics.mjs --local",
+    "d1:tag:remote": "node scripts/tag-ayah-topics.mjs --remote"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260208.0",
