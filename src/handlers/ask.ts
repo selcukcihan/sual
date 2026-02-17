@@ -16,17 +16,27 @@ import type { AyahRow, Env } from "../shared/types";
 
 export async function handleAsk(request: Request, env: Env): Promise<Response> {
   const identity = await ensureAnonIdentity(request, env);
-  const publicQueryId = crypto.randomUUID();
   const baseHeaders: Record<string, string> = identity.setCookie ? { "set-cookie": identity.setCookie } : {};
   let rawQuestion = "";
   let requestLang = "tr";
+  let publicQueryId: string | null = null;
 
-  function withPublicQueryId(payload: unknown): unknown {
+  function getOrCreatePublicQueryId(): string {
+    if (!publicQueryId) {
+      publicQueryId = crypto.randomUUID();
+    }
+    return publicQueryId;
+  }
+
+  function withPublicQueryId(payload: unknown, shareable: boolean): unknown {
+    if (!shareable) {
+      return payload;
+    }
     if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
       return payload;
     }
     const record = payload as Record<string, unknown>;
-    return { ...record, query_id: publicQueryId };
+    return { ...record, query_id: getOrCreatePublicQueryId() };
   }
 
   async function respond(
@@ -36,9 +46,10 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
     meta?: { llmUsed?: boolean; llmError?: string; retrievedCount?: number },
     extraHeaders?: Record<string, string>
   ): Promise<Response> {
-    const payloadWithId = withPublicQueryId(payload);
+    const shareable = meta?.llmUsed === true;
+    const payloadWithId = withPublicQueryId(payload, shareable);
     await logGuidanceRequest(request, env, {
-      publicId: publicQueryId,
+      publicId: shareable ? getOrCreatePublicQueryId() : undefined,
       anonId: identity.anonId,
       questionText: rawQuestion,
       lang: requestLang,

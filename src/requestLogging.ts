@@ -2,7 +2,7 @@ import { getClientIp, isProduction } from "./shared/http";
 import type { Env } from "./shared/types";
 
 export type RequestLogRecord = {
-  publicId: string;
+  publicId?: string;
   anonId: string;
   questionText: string;
   lang: string;
@@ -36,7 +36,7 @@ export async function logGuidanceRequest(request: Request, env: Env, record: Req
        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
       .bind(
-        record.publicId,
+        record.publicId || null,
         record.anonId,
         nowSec,
         normalizeLang(record.lang),

@@ -166,7 +166,7 @@ async function getSharedQueryById(
   const row = await env.DB.prepare(
     `SELECT public_id, lang, question_text, response_json
      FROM guidance_request
-     WHERE public_id = ? AND http_status = 200 AND response_json IS NOT NULL
+     WHERE public_id = ? AND http_status = 200 AND llm_used = 1 AND response_json IS NOT NULL
      LIMIT 1`
   ).bind(publicId).first<{ public_id: string; lang: string; question_text: string; response_json: string }>();
 
