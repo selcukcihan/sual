@@ -36,6 +36,7 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
       llmUsed: meta?.llmUsed,
       llmError: meta?.llmError,
       retrievedCount: meta?.retrievedCount,
+      responsePayload: payload,
     });
     return json(payload, status, { ...baseHeaders, ...(extraHeaders || {}) });
   }

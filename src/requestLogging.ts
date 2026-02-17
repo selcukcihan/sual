@@ -10,6 +10,7 @@ export type RequestLogRecord = {
   llmUsed?: boolean;
   llmError?: string;
   retrievedCount?: number;
+  responsePayload?: unknown;
 };
 
 export async function logGuidanceRequest(request: Request, env: Env, record: RequestLogRecord): Promise<void> {
@@ -30,8 +31,8 @@ export async function logGuidanceRequest(request: Request, env: Env, record: Req
     await env.DB.prepare(
       `INSERT INTO guidance_request (
          anon_id, created_at, lang, question_text, status, http_status,
-         ip_hash, user_agent_hash, llm_used, llm_error, retrieved_count
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         ip_hash, user_agent_hash, llm_used, llm_error, retrieved_count, response_json
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
       .bind(
         record.anonId,
@@ -44,7 +45,8 @@ export async function logGuidanceRequest(request: Request, env: Env, record: Req
         userAgentHash,
         typeof record.llmUsed === "boolean" ? (record.llmUsed ? 1 : 0) : null,
         sanitizeError(record.llmError),
-        typeof record.retrievedCount === "number" ? Math.max(0, record.retrievedCount) : null
+        typeof record.retrievedCount === "number" ? Math.max(0, record.retrievedCount) : null,
+        serializeResponsePayload(record.responsePayload)
       )
       .run();
   } catch (err) {
@@ -104,4 +106,15 @@ function sanitizeStatus(value: string): string {
 function sanitizeError(value: string | undefined): string | null {
   if (!value) return null;
   return value.slice(0, 500);
+}
+
+function serializeResponsePayload(value: unknown): string | null {
+  if (value === undefined) return null;
+  try {
+    const encoded = JSON.stringify(value);
+    if (!encoded) return null;
+    return encoded.length > 12000 ? `${encoded.slice(0, 12000)}...` : encoded;
+  } catch {
+    return null;
+  }
 }
