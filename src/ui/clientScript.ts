@@ -28,6 +28,8 @@ export function renderClientScript(params: ClientScriptParams): string {
     const q = document.getElementById('q');
     const lang = document.getElementById('lang-global');
     const statusEl = document.getElementById('status');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    const loadingText = document.getElementById('loading-text');
     const placeholder = document.getElementById('placeholder');
     const answer = document.getElementById('answer');
     const topCitations = document.getElementById('top-citations');
@@ -106,6 +108,7 @@ export function renderClientScript(params: ClientScriptParams): string {
       placeholder.textContent = v.placeholder;
       submit.textContent = v.ask;
       shareBtn.textContent = v.share;
+      loadingText.textContent = v.analyzing;
       q.placeholder = v.qPlaceholder;
       statusEl.textContent = v.ready;
     }
@@ -160,6 +163,10 @@ export function renderClientScript(params: ClientScriptParams): string {
     function setCurrentQueryId(value) {
       currentQueryId = typeof value === 'string' ? value : '';
       shareBtn.style.display = currentQueryId ? 'inline-flex' : 'none';
+    }
+
+    function setLoading(active) {
+      loadingIndicator.style.display = active ? 'inline-flex' : 'none';
     }
 
     function loadTurnstileScript() {
@@ -302,6 +309,7 @@ export function renderClientScript(params: ClientScriptParams): string {
 
       submit.disabled = true;
       statusEl.textContent = t().analyzing;
+      setLoading(true);
 
       try {
         setCurrentQueryId('');
@@ -311,12 +319,14 @@ export function renderClientScript(params: ClientScriptParams): string {
           if (!window.turnstile || turnstileWidgetId === null) {
             statusEl.textContent = t().captchaMissing;
             submit.disabled = false;
+            setLoading(false);
             return;
           }
           turnstileToken = readTurnstileToken();
           if (!turnstileToken) {
             statusEl.textContent = t().captchaMissing;
             submit.disabled = false;
+            setLoading(false);
             return;
           }
         }
@@ -342,6 +352,7 @@ export function renderClientScript(params: ClientScriptParams): string {
         statusEl.textContent = 'Request failed: ' + (err && err.message ? err.message : String(err));
       } finally {
         submit.disabled = false;
+        setLoading(false);
       }
     });
 

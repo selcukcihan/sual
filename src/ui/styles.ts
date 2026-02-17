@@ -119,6 +119,26 @@ export const HOME_PAGE_STYLES = `
       margin-top: 0.6rem;
       margin-right: auto;
     }
+    .loading-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      margin-top: 0.55rem;
+      color: #3f5570;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .spinner {
+      width: 15px;
+      height: 15px;
+      border: 2px solid #c6d3e8;
+      border-top-color: #2b5cad;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
     .status { margin-top: 0.5rem; color: var(--muted); font-size: 0.85rem; }
     .turnstile-wrap { margin-top: 0.55rem; }
     .section-title {
