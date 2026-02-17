@@ -12,7 +12,7 @@ export default {
     if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/about")) {
       const initialPage = url.pathname === "/about" ? "about" : "guide";
       const identity = await ensureAnonIdentity(request, env);
-      return new Response(renderHomePage(env, initialPage), {
+      return new Response(renderHomePage(env, initialPage, request.url), {
         headers: {
           ...HTML_HEADERS,
           ...SECURITY_HEADERS,
