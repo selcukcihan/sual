@@ -13,6 +13,8 @@ export const tr: UiStrings = {
   evidence: "DELİLLER",
   about: "HAKKINDA",
   aboutP1: "Sual, gerçek hayat durumlarını düşünmenize yardımcı olmak için Kur'an ayet çevirilerini kullanan bir etik düşünme yardımcısıdır.",
+  aboutRepoLabel: "GitHub repo",
+  aboutRepoLinkText: "Repoyu aç",
   aboutSourceLabel: "Bu uygulamada kullanılan birincil çeviri dosyası",
   sourceLinkText: "Kaynak dosyayı aç",
   tanzilLabel: "Ayet referansları okuma ve doğrulama için Tanzil ile bağlantılıdır",

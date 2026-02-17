@@ -13,6 +13,8 @@ export const en: UiStrings = {
   evidence: "EVIDENCE",
   about: "ABOUT",
   aboutP1: "Sual is an ethical reflection assistant that uses Quran verse translations to help you think through real-life situations.",
+  aboutRepoLabel: "GitHub repository",
+  aboutRepoLinkText: "Open repository",
   aboutSourceLabel: "Primary translation file used in this app",
   sourceLinkText: "Open source file",
   tanzilLabel: "Verse references are linked to Tanzil for reading and verification",

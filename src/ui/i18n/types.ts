@@ -13,6 +13,8 @@ export type UiStrings = {
   evidence: string;
   about: string;
   aboutP1: string;
+  aboutRepoLabel: string;
+  aboutRepoLinkText: string;
   aboutSourceLabel: string;
   sourceLinkText: string;
   tanzilLabel: string;

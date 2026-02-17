@@ -46,6 +46,7 @@ export function renderClientScript(params: ClientScriptParams): string {
     const pageGuide = document.getElementById('page-guide');
     const pageAbout = document.getElementById('page-about');
     const aboutTitle = document.getElementById('about-title');
+    const aboutRepo = document.getElementById('about-repo');
     const aboutSource = document.getElementById('about-source');
     const aboutTanzil = document.getElementById('about-tanzil');
     const aboutP1 = document.getElementById('about-p1');
@@ -58,6 +59,7 @@ export function renderClientScript(params: ClientScriptParams): string {
     const turnstileWrap = document.getElementById('turnstile-wrap');
     const QURAN_SOURCE_URL = 'https://cdn.jsdelivr.net/npm/quran-json@3.1.2/dist/quran_en.json';
     const TANZIL_URL = 'https://tanzil.net';
+    const GITHUB_REPO_URL = 'https://github.com/selcukcihan/sual';
 
     function normalizeLang(value) {
       return value === 'tr' ? 'tr' : 'en';
@@ -85,6 +87,8 @@ export function renderClientScript(params: ClientScriptParams): string {
       labelEvidence.textContent = v.evidence;
       labelActions.textContent = v.actions;
       aboutTitle.textContent = v.about;
+      aboutRepo.innerHTML = v.aboutRepoLabel + ': ' +
+        '<a class="chip" href="' + GITHUB_REPO_URL + '" target="_blank" rel="noopener noreferrer">' + v.aboutRepoLinkText + '</a>';
       aboutSource.innerHTML = v.aboutSourceLabel + ': ' +
         '<a class="chip" href="' + QURAN_SOURCE_URL + '" target="_blank" rel="noopener noreferrer">' + v.sourceLinkText + '</a>';
       aboutTanzil.innerHTML = v.tanzilLabel + ': ' +

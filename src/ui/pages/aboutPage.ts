@@ -5,6 +5,7 @@ export function renderAboutPage(): string {
         <p class="section-title" id="about-title">ABOUT</p>
         <div class="about-copy">
           <p id="about-p1"></p>
+          <p id="about-repo"></p>
           <p id="about-source"></p>
           <p id="about-tanzil"></p>
           <p id="about-p2"></p>
