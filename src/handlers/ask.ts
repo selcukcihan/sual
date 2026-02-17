@@ -118,8 +118,9 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
   const turnstileResult = await verifyTurnstile(turnstileToken, request, env);
   if (!turnstileResult.ok) {
     const statusCode = turnstileResult.statusCode || 403;
+    const turnstileMessage = localizeTurnstileError(turnstileResult.message, requestLang);
     return respond(
-      { error: turnstileResult.message || "Turnstile verification failed." },
+      { error: turnstileMessage },
       statusCode,
       "turnstile_failed"
     );
@@ -267,6 +268,22 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
     llmError: guidanceResult.llmError,
     retrievedCount: retrieved.length,
   });
+}
+
+function localizeTurnstileError(message: string | undefined, lang: string): string {
+  if (lang !== "tr") {
+    return message || "Turnstile verification failed.";
+  }
+
+  const key = (message || "").toLowerCase();
+  if (key.includes("missing")) return "Turnstile doğrulama jetonu eksik.";
+  if (key.includes("hostname mismatch")) return "Turnstile alan adı doğrulaması eşleşmedi.";
+  if (key.includes("action mismatch")) return "Turnstile işlem doğrulaması eşleşmedi.";
+  if (key.includes("not configured")) return "Turnstile gerekli ancak yapılandırılmamış.";
+  if (key.includes("unavailable")) return "Turnstile doğrulama servisine şu anda ulaşılamıyor.";
+  if (key.includes("upstream")) return "Turnstile doğrulama servisi hatası.";
+  if (key.includes("validation failed")) return "Güvenlik kontrolü başarısız oldu. Lütfen yeniden doğrulayın.";
+  return "Güvenlik kontrolü başarısız oldu. Lütfen yeniden doğrulayın.";
 }
 
 function extractRetrievedCount(payload: Record<string, unknown>): number | undefined {
