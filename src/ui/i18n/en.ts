@@ -32,6 +32,7 @@ export const en: UiStrings = {
   analyzing: "Analyzing...",
   empty: "Please enter a question.",
   captchaMissing: "Please complete the security check.",
+  requestFailed: "Request failed",
   done: "Done",
   share: "Share",
   linkCopied: "Permalink copied.",

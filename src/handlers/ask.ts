@@ -72,18 +72,32 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
   }
 
   if (!isJsonRequest(request)) {
-    return respond({ error: "content-type must be application/json" }, 415, "invalid_content_type");
+    return respond(
+      { error: requestLang === "tr" ? "İçerik türü application/json olmalıdır." : "content-type must be application/json" },
+      415,
+      "invalid_content_type"
+    );
   }
   const declaredSize = Number(request.headers.get("content-length") || "0");
   if (Number.isFinite(declaredSize) && declaredSize > MAX_BODY_BYTES) {
-    return respond({ error: `Request body exceeds ${MAX_BODY_BYTES} bytes` }, 413, "payload_too_large");
+    return respond(
+      {
+        error: requestLang === "tr"
+          ? `İstek gövdesi ${MAX_BODY_BYTES} baytı aşıyor`
+          : `Request body exceeds ${MAX_BODY_BYTES} bytes`,
+      },
+      413,
+      "payload_too_large"
+    );
   }
 
   const rateResult = await applyRateLimit(request, env);
   if (!rateResult.allowed) {
     return respond(
       {
-        error: "Rate limit exceeded. Please retry shortly.",
+        error: requestLang === "tr"
+          ? "Oran limiti aşıldı. Lütfen kısa süre sonra tekrar deneyin."
+          : "Rate limit exceeded. Please retry shortly.",
       },
       429,
       "rate_limited",
@@ -98,7 +112,7 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
 
   const parsedBody = await readJsonBodyWithLimit(request, MAX_BODY_BYTES);
   if (!parsedBody.ok) {
-    return respond({ error: parsedBody.error }, parsedBody.status, "invalid_json");
+    return respond({ error: localizeBodyParseError(parsedBody.error, requestLang, MAX_BODY_BYTES) }, parsedBody.status, "invalid_json");
   }
   question = (parsedBody.body.question || "").trim();
   lang = parsedBody.body.lang === "en" ? "en" : "tr";
@@ -107,10 +121,22 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
   turnstileToken = (parsedBody.body.turnstileToken || "").trim();
 
   if (!question) {
-    return respond({ error: "Question is required" }, 400, "empty_question");
+    return respond(
+      { error: requestLang === "tr" ? "Soru zorunludur" : "Question is required" },
+      400,
+      "empty_question"
+    );
   }
   if (question.length > MAX_QUESTION_CHARS) {
-    return respond({ error: `Question exceeds ${MAX_QUESTION_CHARS} characters` }, 400, "question_too_long");
+    return respond(
+      {
+        error: requestLang === "tr"
+          ? `Soru ${MAX_QUESTION_CHARS} karakteri aşıyor`
+          : `Question exceeds ${MAX_QUESTION_CHARS} characters`,
+      },
+      400,
+      "question_too_long"
+    );
   }
   question = question.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
   rawQuestion = question;
@@ -141,7 +167,9 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
   if (moderationResult.outcome === "unavailable") {
     return respond(
       {
-        error: "Moderation service unavailable. Please try again shortly.",
+        error: requestLang === "tr"
+          ? "Moderasyon servisine şu anda ulaşılamıyor. Lütfen kısa süre sonra tekrar deneyin."
+          : "Moderation service unavailable. Please try again shortly.",
       },
       503,
       "moderation_unavailable"
@@ -284,6 +312,17 @@ function localizeTurnstileError(message: string | undefined, lang: string): stri
   if (key.includes("upstream")) return "Turnstile doğrulama servisi hatası.";
   if (key.includes("validation failed")) return "Güvenlik kontrolü başarısız oldu. Lütfen yeniden doğrulayın.";
   return "Güvenlik kontrolü başarısız oldu. Lütfen yeniden doğrulayın.";
+}
+
+function localizeBodyParseError(message: string, lang: string, maxBodyBytes: number): string {
+  if (lang !== "tr") return message;
+  if (message === "Invalid JSON body") {
+    return "Geçersiz JSON gövdesi";
+  }
+  if (message === `Request body exceeds ${maxBodyBytes} bytes`) {
+    return `İstek gövdesi ${maxBodyBytes} baytı aşıyor`;
+  }
+  return message;
 }
 
 function extractRetrievedCount(payload: Record<string, unknown>): number | undefined {

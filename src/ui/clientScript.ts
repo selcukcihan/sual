@@ -349,7 +349,7 @@ export function renderClientScript(params: ClientScriptParams): string {
         renderResult(data);
         statusEl.textContent = t().done;
       } catch (err) {
-        statusEl.textContent = 'Request failed: ' + (err && err.message ? err.message : String(err));
+        statusEl.textContent = t().requestFailed + ': ' + (err && err.message ? err.message : String(err));
       } finally {
         submit.disabled = false;
         setLoading(false);

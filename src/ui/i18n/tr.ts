@@ -32,6 +32,7 @@ export const tr: UiStrings = {
   analyzing: "Analiz ediliyor...",
   empty: "Lütfen bir soru girin.",
   captchaMissing: "Lütfen güvenlik doğrulamasını tamamlayın.",
+  requestFailed: "İstek başarısız oldu",
   done: "Tamamlandı",
   share: "Paylaş",
   linkCopied: "Kalıcı bağlantı kopyalandı.",

@@ -32,6 +32,7 @@ export type UiStrings = {
   analyzing: string;
   empty: string;
   captchaMissing: string;
+  requestFailed: string;
   done: string;
   share: string;
   linkCopied: string;
