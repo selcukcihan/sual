@@ -2,7 +2,7 @@ import type { UiStrings } from "./types";
 
 export const tr: UiStrings = {
   title: "Sual Kuran Rehberi",
-  subtitle: "Gerçek bir durum yazın. Ayet atıflarıyla kısa ve uygulanabilir rehberlik alın.",
+  subtitle: "Gerçek bir durum yazın. Ayet atıflarıyla kısa ve uygulanabilir rehberlik alın; en doğrusunu Allah bilir.",
   navGuide: "Rehber",
   navAbout: "Hakkında",
   langLabel: "Dil",

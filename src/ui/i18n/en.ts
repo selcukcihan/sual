@@ -2,7 +2,7 @@ import type { UiStrings } from "./types";
 
 export const en: UiStrings = {
   title: "Sual Quran Guide",
-  subtitle: "Describe a real situation. You will get concise guidance with cited ayah references.",
+  subtitle: "Describe a real situation. You will get concise guidance with cited ayah references; Allah knows best.",
   navGuide: "Guide",
   navAbout: "About",
   langLabel: "Language",
