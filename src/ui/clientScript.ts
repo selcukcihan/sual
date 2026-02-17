@@ -20,6 +20,7 @@ export function renderClientScript(params: ClientScriptParams): string {
     const I18N = ${i18nJson};
     const LANG_KEY = 'sual.lang';
     let turnstileWidgetId = null;
+    let turnstileScriptPromise = null;
     const form = document.getElementById('ask-form');
     const submit = document.getElementById('submit');
     const q = document.getElementById('q');
@@ -137,6 +138,9 @@ export function renderClientScript(params: ClientScriptParams): string {
       pageAbout.hidden = !isAbout;
       navGuide.classList.toggle('active', !isAbout);
       navAbout.classList.toggle('active', isAbout);
+      if (!isAbout) {
+        void setupTurnstile();
+      }
       if (pushHistory) {
         history.pushState({}, '', isAbout ? '/about' : '/');
       }
@@ -146,7 +150,29 @@ export function renderClientScript(params: ClientScriptParams): string {
       return 'https://tanzil.net/#' + ref;
     }
 
-    function setupTurnstile() {
+    function loadTurnstileScript() {
+      if (!TURNSTILE_ENABLED || !TURNSTILE_SITE_KEY) {
+        return Promise.resolve(false);
+      }
+      if (window.turnstile && typeof window.turnstile.render === 'function') {
+        return Promise.resolve(true);
+      }
+      if (turnstileScriptPromise) {
+        return turnstileScriptPromise;
+      }
+      turnstileScriptPromise = new Promise((resolve) => {
+        const script = document.createElement('script');
+        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+        script.async = true;
+        script.defer = true;
+        script.onload = () => resolve(true);
+        script.onerror = () => resolve(false);
+        document.head.appendChild(script);
+      });
+      return turnstileScriptPromise;
+    }
+
+    async function setupTurnstile() {
       if (!TURNSTILE_ENABLED) {
         turnstileWrap.innerHTML = '';
         return;
@@ -155,8 +181,8 @@ export function renderClientScript(params: ClientScriptParams): string {
         turnstileWrap.innerHTML = '';
         return;
       }
-      if (!window.turnstile || typeof window.turnstile.render !== 'function') {
-        setTimeout(setupTurnstile, 120);
+      const loaded = await loadTurnstileScript();
+      if (!loaded || !window.turnstile || typeof window.turnstile.render !== 'function') {
         return;
       }
       if (turnstileWidgetId !== null) {
@@ -267,6 +293,7 @@ export function renderClientScript(params: ClientScriptParams): string {
       try {
         let turnstileToken = '';
         if (TURNSTILE_ENABLED) {
+          await setupTurnstile();
           if (!window.turnstile || turnstileWidgetId === null) {
             statusEl.textContent = t().captchaMissing;
             submit.disabled = false;
@@ -322,6 +349,5 @@ export function renderClientScript(params: ClientScriptParams): string {
     lang.addEventListener('input', () => setLanguage(lang.value, true));
 
     setPage(INITIAL_PAGE === 'about' ? 'about' : 'guide', false);
-    setupTurnstile();
   `;
 }

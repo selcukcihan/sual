@@ -18,6 +18,15 @@ export function renderHomePage(env: Env, initialPage: "guide" | "about", request
   const faviconSvg =
     "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%231d4ed8'/><text x='32' y='42' text-anchor='middle' font-family='Arial,sans-serif' font-size='36' fill='white'>S</text></svg>";
   const faviconDataUri = `data:image/svg+xml,${encodeURIComponent(faviconSvg)}`;
+  const compactStyles = compactInlineCss(HOME_PAGE_STYLES);
+  const compactClientScript = compactInlineJs(
+    renderClientScript({
+      turnstileSiteKey,
+      turnstileEnabled,
+      initialPage,
+      i18n: UI_I18N,
+    })
+  );
 
   return `<!doctype html>
 <html lang="en">
@@ -38,8 +47,7 @@ export function renderHomePage(env: Env, initialPage: "guide" | "about", request
   <meta name="twitter:description" content="${description}" />
   <link rel="icon" href="${faviconDataUri}" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="${faviconDataUri}" />
-  <style>${HOME_PAGE_STYLES}
-  </style>
+  <style>${compactStyles}</style>
 </head>
 <body>
   <main class="shell">
@@ -47,16 +55,7 @@ ${renderTopBar()}
 ${renderGuidePage()}
 ${renderAboutPage()}
   </main>
-
-  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-  <script>
-${renderClientScript({
-  turnstileSiteKey,
-  turnstileEnabled,
-  initialPage,
-  i18n: UI_I18N,
-})}
-  </script>
+  <script>${compactClientScript}</script>
 </body>
 </html>`;
 }
@@ -64,4 +63,20 @@ ${renderClientScript({
 function isTruthy(value: string | undefined): boolean {
   const normalized = (value || "").trim().toLowerCase();
   return normalized === "1" || normalized === "true" || normalized === "yes" || normalized === "on";
+}
+
+function compactInlineCss(input: string): string {
+  return input
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .join("");
+}
+
+function compactInlineJs(input: string): string {
+  return input
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
+    .join("\n");
 }
