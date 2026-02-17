@@ -15,6 +15,7 @@ export function renderHomePage(env: Env, initialPage: "guide" | "about", request
   const description =
     "Quran-grounded ethical guidance with verse citations, practical steps, and transparent evidence.";
   const currentUrl = new URL(initialPage === "about" ? "/about" : "/", requestUrl).toString();
+  const openGraphImageUrl = new URL("/og-image.svg", requestUrl).toString();
   const faviconSvg =
     "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%231d4ed8'/><text x='32' y='42' text-anchor='middle' font-family='Arial,sans-serif' font-size='36' fill='white'>S</text></svg>";
   const faviconDataUri = `data:image/svg+xml,${encodeURIComponent(faviconSvg)}`;
@@ -42,9 +43,15 @@ export function renderHomePage(env: Env, initialPage: "guide" | "about", request
   <meta property="og:title" content="${title}" />
   <meta property="og:description" content="${description}" />
   <meta property="og:url" content="${currentUrl}" />
+  <meta property="og:image" content="${openGraphImageUrl}" />
+  <meta property="og:image:type" content="image/svg+xml" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="Sual Quran Guide preview image" />
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="${title}" />
   <meta name="twitter:description" content="${description}" />
+  <meta name="twitter:image" content="${openGraphImageUrl}" />
   <link rel="icon" href="${faviconDataUri}" type="image/svg+xml" />
   <link rel="apple-touch-icon" href="${faviconDataUri}" />
   <style>${compactStyles}</style>

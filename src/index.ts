@@ -27,6 +27,15 @@ export default {
       });
     }
 
+    if (request.method === "GET" && url.pathname === "/og-image.svg") {
+      return new Response(buildOpenGraphImageSvg(), {
+        headers: {
+          "content-type": "image/svg+xml; charset=utf-8",
+          "cache-control": "public, max-age=86400",
+        },
+      });
+    }
+
     if (request.method === "GET" && (url.pathname === "/" || url.pathname === "/about")) {
       const initialPage = url.pathname === "/about" ? "about" : "guide";
       const identity = await ensureAnonIdentity(request, env);
@@ -87,4 +96,25 @@ function escapeXml(value: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
+}
+
+function buildOpenGraphImageSvg(): string {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-label="Sual Quran Guide">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#1e3a8a"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <g fill="#ffffff">
+    <text x="80" y="250" font-size="86" font-family="Arial, Helvetica, sans-serif" font-weight="700">Sual Quran Guide</text>
+    <text x="80" y="325" font-size="36" font-family="Arial, Helvetica, sans-serif" opacity="0.92">
+      Quran-grounded ethical guidance with verse citations
+    </text>
+    <rect x="80" y="380" width="132" height="132" rx="20" fill="#ffffff" opacity="0.18"/>
+    <text x="128" y="468" font-size="84" font-family="Arial, Helvetica, sans-serif" font-weight="700">S</text>
+  </g>
+</svg>`;
 }
