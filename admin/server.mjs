@@ -59,6 +59,7 @@ async function getOverview(hours) {
       COUNT(DISTINCT ip_hash) AS unique_ip_hashes,
       COUNT(DISTINCT user_agent_hash) AS unique_user_agents,
       SUM(CASE WHEN llm_used = 1 THEN 1 ELSE 0 END) AS llm_used_requests,
+      SUM(CASE WHEN llm_error = 'LLM output failed citation/shape validation' THEN 1 ELSE 0 END) AS llm_validation_failures,
       SUM(CASE WHEN http_status >= 400 THEN 1 ELSE 0 END) AS error_requests,
       SUM(CASE WHEN status = 'rate_limited' THEN 1 ELSE 0 END) AS rate_limited_requests
     FROM guidance_request
@@ -137,6 +138,7 @@ async function getOverview(hours) {
       uniqueIpHashes: toInt(summary.unique_ip_hashes),
       uniqueUserAgents: toInt(summary.unique_user_agents),
       llmUsedRequests: toInt(summary.llm_used_requests),
+      llmValidationFailures: toInt(summary.llm_validation_failures),
       errorRequests: toInt(summary.error_requests),
       rateLimitedRequests: toInt(summary.rate_limited_requests),
     },
