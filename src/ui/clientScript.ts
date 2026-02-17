@@ -21,8 +21,10 @@ export function renderClientScript(params: ClientScriptParams): string {
     const LANG_KEY = 'sual.lang';
     let turnstileWidgetId = null;
     let turnstileScriptPromise = null;
+    let currentQueryId = '';
     const form = document.getElementById('ask-form');
     const submit = document.getElementById('submit');
+    const shareBtn = document.getElementById('share-btn');
     const q = document.getElementById('q');
     const lang = document.getElementById('lang-global');
     const statusEl = document.getElementById('status');
@@ -103,6 +105,7 @@ export function renderClientScript(params: ClientScriptParams): string {
       aboutP7.textContent = v.aboutP7;
       placeholder.textContent = v.placeholder;
       submit.textContent = v.ask;
+      shareBtn.textContent = v.share;
       q.placeholder = v.qPlaceholder;
       statusEl.textContent = v.ready;
     }
@@ -148,6 +151,15 @@ export function renderClientScript(params: ClientScriptParams): string {
 
     function tanzilUrl(ref) {
       return 'https://tanzil.net/#' + ref;
+    }
+
+    function permalinkForQuery(id) {
+      return location.origin + '/q/' + id;
+    }
+
+    function setCurrentQueryId(value) {
+      currentQueryId = typeof value === 'string' ? value : '';
+      shareBtn.style.display = currentQueryId ? 'inline-flex' : 'none';
     }
 
     function loadTurnstileScript() {
@@ -231,6 +243,7 @@ export function renderClientScript(params: ClientScriptParams): string {
       placeholder.style.display = 'none';
       answer.style.display = 'block';
       answer.textContent = data.answer || '';
+      setCurrentQueryId(typeof data.query_id === 'string' ? data.query_id : '');
 
       const refs = Array.isArray(data.citations) ? data.citations.slice(0, 10) : [];
       topCitations.innerHTML = refs.map(citationChip).join('');
@@ -291,6 +304,7 @@ export function renderClientScript(params: ClientScriptParams): string {
       statusEl.textContent = t().analyzing;
 
       try {
+        setCurrentQueryId('');
         let turnstileToken = '';
         if (TURNSTILE_ENABLED) {
           await setupTurnstile();
@@ -348,6 +362,45 @@ export function renderClientScript(params: ClientScriptParams): string {
     lang.addEventListener('change', () => setLanguage(lang.value, true));
     lang.addEventListener('input', () => setLanguage(lang.value, true));
 
+    shareBtn.addEventListener('click', async () => {
+      if (!currentQueryId) return;
+      const link = permalinkForQuery(currentQueryId);
+      try {
+        await navigator.clipboard.writeText(link);
+        statusEl.textContent = t().linkCopied;
+      } catch {
+        statusEl.textContent = link;
+      }
+    });
+
+    async function loadSharedQueryIfPresent() {
+      const match = location.pathname.match(/^\\/q\\/([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/i);
+      if (!match) return;
+
+      const queryId = match[1];
+      statusEl.textContent = t().analyzing;
+      try {
+        const resp = await fetch('/api/query/' + queryId);
+        const data = await resp.json();
+        if (!resp.ok || !data || typeof data !== 'object' || !data.payload) {
+          throw new Error('invalid shared query response');
+        }
+
+        if (data.lang === 'en' || data.lang === 'tr') {
+          setLanguage(data.lang, false);
+        }
+        if (typeof data.question === 'string') {
+          q.value = data.question;
+        }
+        renderResult(data.payload);
+        setCurrentQueryId(queryId);
+        statusEl.textContent = t().done;
+      } catch {
+        statusEl.textContent = t().sharedLoadFailed;
+      }
+    }
+
     setPage(INITIAL_PAGE === 'about' ? 'about' : 'guide', false);
+    loadSharedQueryIfPresent();
   `;
 }

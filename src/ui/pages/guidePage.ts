@@ -12,6 +12,7 @@ export function renderGuidePage(): string {
               <div class="turnstile-wrap" id="turnstile-wrap"></div>
               <button id="submit" type="submit">Get Guidance</button>
             </form>
+            <button id="share-btn" type="button" class="share-btn" style="display:none"></button>
             <div class="status" id="status"></div>
           </section>
 

@@ -33,6 +33,9 @@ export type UiStrings = {
   empty: string;
   captchaMissing: string;
   done: string;
+  share: string;
+  linkCopied: string;
+  sharedLoadFailed: string;
   qPlaceholder: string;
   open: string;
   tanzil: string;

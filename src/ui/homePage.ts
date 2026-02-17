@@ -6,15 +6,27 @@ import { renderAboutPage } from "./pages/aboutPage";
 import { renderGuidePage } from "./pages/guidePage";
 import { HOME_PAGE_STYLES } from "./styles";
 
-export function renderHomePage(env: Env, initialPage: "guide" | "about", requestUrl: string): string {
+export type SeoOverrides = {
+  title?: string;
+  description?: string;
+};
+
+export function renderHomePage(
+  env: Env,
+  initialPage: "guide" | "about",
+  requestUrl: string,
+  seoOverrides?: SeoOverrides
+): string {
   const turnstileSiteKey = (env.TURNSTILE_SITE_KEY || "").trim();
   const isProduction = (env.APP_ENV || "").toLowerCase() === "production";
   const allowInsecureLocalBypass = !isProduction && isTruthy(env.ALLOW_INSECURE_LOCAL_BYPASS);
   const turnstileEnabled = Boolean(turnstileSiteKey) && !allowInsecureLocalBypass;
-  const title = initialPage === "about" ? "Sual Quran Guide - About" : "Sual Quran Guide";
-  const description =
+  const defaultTitle = initialPage === "about" ? "Sual Quran Guide - About" : "Sual Quran Guide";
+  const defaultDescription =
     "Quran-grounded ethical guidance with verse citations, practical steps, and transparent evidence.";
-  const currentUrl = new URL(initialPage === "about" ? "/about" : "/", requestUrl).toString();
+  const title = sanitizeMeta(seoOverrides?.title || defaultTitle, 120);
+  const description = sanitizeMeta(seoOverrides?.description || defaultDescription, 300);
+  const currentUrl = new URL(requestUrl).toString();
   const openGraphImageUrl = new URL("/og-image.svg", requestUrl).toString();
   const faviconSvg =
     "<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='12' fill='%231d4ed8'/><text x='32' y='42' text-anchor='middle' font-family='Arial,sans-serif' font-size='36' fill='white'>S</text></svg>";
@@ -86,4 +98,12 @@ function compactInlineJs(input: string): string {
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
     .join("\n");
+}
+
+function sanitizeMeta(value: string, maxLen: number): string {
+  return String(value || "")
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, maxLen);
 }

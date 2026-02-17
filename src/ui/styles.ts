@@ -110,6 +110,15 @@ export const HOME_PAGE_STYLES = `
       min-height: 40px;
     }
     button:disabled { opacity: 0.7; cursor: wait; }
+    .share-btn {
+      width: auto;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: #36577a;
+      margin-top: 0.6rem;
+      margin-right: auto;
+    }
     .status { margin-top: 0.5rem; color: var(--muted); font-size: 0.85rem; }
     .turnstile-wrap { margin-top: 0.55rem; }
     .section-title {

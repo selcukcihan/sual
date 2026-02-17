@@ -16,9 +16,18 @@ import type { AyahRow, Env } from "../shared/types";
 
 export async function handleAsk(request: Request, env: Env): Promise<Response> {
   const identity = await ensureAnonIdentity(request, env);
+  const publicQueryId = crypto.randomUUID();
   const baseHeaders: Record<string, string> = identity.setCookie ? { "set-cookie": identity.setCookie } : {};
   let rawQuestion = "";
   let requestLang = "tr";
+
+  function withPublicQueryId(payload: unknown): unknown {
+    if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+      return payload;
+    }
+    const record = payload as Record<string, unknown>;
+    return { ...record, query_id: publicQueryId };
+  }
 
   async function respond(
     payload: unknown,
@@ -27,7 +36,9 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
     meta?: { llmUsed?: boolean; llmError?: string; retrievedCount?: number },
     extraHeaders?: Record<string, string>
   ): Promise<Response> {
+    const payloadWithId = withPublicQueryId(payload);
     await logGuidanceRequest(request, env, {
+      publicId: publicQueryId,
       anonId: identity.anonId,
       questionText: rawQuestion,
       lang: requestLang,
@@ -36,9 +47,9 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
       llmUsed: meta?.llmUsed,
       llmError: meta?.llmError,
       retrievedCount: meta?.retrievedCount,
-      responsePayload: payload,
+      responsePayload: payloadWithId,
     });
-    return json(payload, status, { ...baseHeaders, ...(extraHeaders || {}) });
+    return json(payloadWithId, status, { ...baseHeaders, ...(extraHeaders || {}) });
   }
 
   if (!isJsonRequest(request)) {

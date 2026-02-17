@@ -2,6 +2,7 @@ import { getClientIp, isProduction } from "./shared/http";
 import type { Env } from "./shared/types";
 
 export type RequestLogRecord = {
+  publicId: string;
   anonId: string;
   questionText: string;
   lang: string;
@@ -30,11 +31,12 @@ export async function logGuidanceRequest(request: Request, env: Env, record: Req
 
     await env.DB.prepare(
       `INSERT INTO guidance_request (
-         anon_id, created_at, lang, question_text, status, http_status,
+         public_id, anon_id, created_at, lang, question_text, status, http_status,
          ip_hash, user_agent_hash, llm_used, llm_error, retrieved_count, response_json
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
       .bind(
+        record.publicId,
         record.anonId,
         nowSec,
         normalizeLang(record.lang),
@@ -113,7 +115,7 @@ function serializeResponsePayload(value: unknown): string | null {
   try {
     const encoded = JSON.stringify(value);
     if (!encoded) return null;
-    return encoded.length > 12000 ? `${encoded.slice(0, 12000)}...` : encoded;
+    return encoded;
   } catch {
     return null;
   }
