@@ -1,0 +1,10 @@
+{
+  "name": "sual-admin-local",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs",
+    "deploy": "echo 'Deployment disabled for admin local tool.' && exit 1"
+  }
+}

@@ -1,0 +1,9 @@
+name = "sual-admin-local-only"
+compatibility_date = "2026-02-17"
+workers_dev = false
+preview_urls = false
+
+[[d1_databases]]
+binding = "DB"
+database_name = "quran-db"
+database_id = "912a1da0-d4ac-4339-a111-28b9c454fbb1"

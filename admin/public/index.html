@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sual Admin Usage Panel</title>
+  <style>
+    :root {
+      --bg: #f3f6fb;
+      --panel: #ffffff;
+      --line: #d8e1ef;
+      --text: #1f2d3d;
+      --muted: #627188;
+      --accent: #1d4ed8;
+      --chip: #eaf1ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+    }
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 0.9rem;
+      margin-bottom: 0.9rem;
+    }
+    h1 {
+      margin: 0 0 0.35rem;
+      font-size: 1.2rem;
+    }
+    p { margin: 0.2rem 0; color: var(--muted); }
+    .tabs {
+      display: flex;
+      gap: 0.45rem;
+      margin-top: 0.7rem;
+    }
+    .tab-btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      padding: 0.4rem 0.7rem;
+      border-radius: 999px;
+      cursor: pointer;
+      font-weight: 700;
+      color: #344459;
+    }
+    .tab-btn.active {
+      background: var(--chip);
+      border-color: #b9cbef;
+      color: #1d4ed8;
+    }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      align-items: center;
+    }
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.6rem;
+    }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 0.65rem;
+      background: #f9fbff;
+    }
+    .metric .label {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+    }
+    .metric .value {
+      font-size: 1.15rem;
+      font-weight: 800;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    th, td {
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      padding: 0.5rem;
+      vertical-align: top;
+    }
+    th { color: #415067; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.03em; }
+    .tag {
+      display: inline-flex;
+      border: 1px solid #bfd0ef;
+      border-radius: 999px;
+      padding: 0.1rem 0.5rem;
+      font-size: 0.75rem;
+      background: var(--chip);
+      color: #1f4aa0;
+      margin-right: 0.35rem;
+    }
+    select, button {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      height: 34px;
+      padding: 0 0.55rem;
+      font: inherit;
+      background: #fff;
+    }
+    button {
+      background: var(--accent);
+      color: #fff;
+      border: 0;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.65; cursor: wait; }
+    .muted { color: var(--muted); font-size: 0.84rem; }
+    pre {
+      margin: 0;
+      white-space: pre-wrap;
+      max-height: 220px;
+      overflow: auto;
+      font: 12px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+      border: 1px solid var(--line);
+      background: #f9fbff;
+      border-radius: 8px;
+      padding: 0.5rem;
+    }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="panel">
+      <h1>Sual Admin Usage Panel</h1>
+      <p>Local-only analytics panel connected to production D1.</p>
+      <div class="tabs">
+        <button id="tab-overview" class="tab-btn active">Overview</button>
+        <button id="tab-interactions" class="tab-btn">Interactions</button>
+      </div>
+    </section>
+
+    <section id="page-overview" class="panel">
+      <div class="row" style="margin-bottom: 0.6rem;">
+        <label>Window</label>
+        <select id="overview-hours">
+          <option value="24">Last 24h</option>
+          <option value="72">Last 72h</option>
+          <option value="168">Last 7d</option>
+          <option value="720">Last 30d</option>
+        </select>
+        <button id="overview-refresh">Refresh</button>
+        <span class="muted" id="overview-status">Ready</span>
+      </div>
+
+      <div class="metric-grid" id="summary-metrics"></div>
+    </section>
+
+    <section id="overview-breakdowns" class="panel">
+      <h3>Breakdowns</h3>
+      <div class="row" id="lang-tags"></div>
+      <div class="row" id="status-tags" style="margin-top: 0.5rem;"></div>
+    </section>
+
+    <section id="overview-series" class="panel">
+      <h3>Usage Trend</h3>
+      <p class="muted">Hourly (selected window) and daily (last 14 days)</p>
+      <div class="row" style="align-items: flex-start;">
+        <div style="flex:1; min-width: 320px;">
+          <h4>Hourly</h4>
+          <table>
+            <thead><tr><th>Hour</th><th>Requests</th></tr></thead>
+            <tbody id="hourly-body"></tbody>
+          </table>
+        </div>
+        <div style="flex:1; min-width: 320px;">
+          <h4>Daily (14d)</h4>
+          <table>
+            <thead><tr><th>Day</th><th>Requests</th><th>Unique Users</th></tr></thead>
+            <tbody id="daily-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="page-interactions" class="panel" hidden>
+      <div class="row" style="margin-bottom: 0.6rem;">
+        <label>Window</label>
+        <select id="interactions-hours">
+          <option value="24">Last 24h</option>
+          <option value="168" selected>Last 7d</option>
+          <option value="720">Last 30d</option>
+          <option value="8760">Last 365d</option>
+        </select>
+        <label>Page Size</label>
+        <select id="interactions-page-size">
+          <option value="10">10</option>
+          <option value="25" selected>25</option>
+          <option value="50">50</option>
+        </select>
+        <button id="interactions-refresh">Refresh</button>
+        <button id="interactions-prev">Prev</button>
+        <button id="interactions-next">Next</button>
+        <span class="muted" id="interactions-status">Ready</span>
+      </div>
+      <p class="muted" id="interactions-page-info"></p>
+      <div id="interactions-list"></div>
+    </section>
+  </main>
+
+  <script>
+    const tabs = {
+      overviewBtn: document.getElementById('tab-overview'),
+      interactionsBtn: document.getElementById('tab-interactions'),
+      overviewPage: document.getElementById('page-overview'),
+      interactionsPage: document.getElementById('page-interactions'),
+      overviewBreakdowns: document.getElementById('overview-breakdowns'),
+      overviewSeries: document.getElementById('overview-series')
+    };
+
+    const state = {
+      interactionsPage: 1,
+      interactionsTotal: 0
+    };
+
+    function setTab(name) {
+      const isOverview = name === 'overview';
+      tabs.overviewBtn.classList.toggle('active', isOverview);
+      tabs.interactionsBtn.classList.toggle('active', !isOverview);
+      tabs.overviewPage.hidden = !isOverview;
+      tabs.overviewBreakdowns.hidden = !isOverview;
+      tabs.overviewSeries.hidden = !isOverview;
+      tabs.interactionsPage.hidden = isOverview;
+    }
+
+    tabs.overviewBtn.addEventListener('click', () => setTab('overview'));
+    tabs.interactionsBtn.addEventListener('click', () => setTab('interactions'));
+
+    document.getElementById('overview-refresh').addEventListener('click', loadOverview);
+    document.getElementById('interactions-refresh').addEventListener('click', () => {
+      state.interactionsPage = 1;
+      loadInteractions();
+    });
+    document.getElementById('interactions-prev').addEventListener('click', () => {
+      state.interactionsPage = Math.max(1, state.interactionsPage - 1);
+      loadInteractions();
+    });
+    document.getElementById('interactions-next').addEventListener('click', () => {
+      const pageSize = Number(document.getElementById('interactions-page-size').value || '25');
+      const maxPage = Math.max(1, Math.ceil(state.interactionsTotal / pageSize));
+      state.interactionsPage = Math.min(maxPage, state.interactionsPage + 1);
+      loadInteractions();
+    });
+
+    async function loadOverview() {
+      const hours = Number(document.getElementById('overview-hours').value || '24');
+      const statusEl = document.getElementById('overview-status');
+      statusEl.textContent = 'Loading...';
+
+      try {
+        const res = await fetch('/api/overview?hours=' + encodeURIComponent(String(hours)));
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to load overview');
+        renderOverview(data);
+        statusEl.textContent = 'Updated ' + formatTs(data.generatedAtSec);
+      } catch (err) {
+        statusEl.textContent = 'Error: ' + (err && err.message ? err.message : String(err));
+      }
+    }
+
+    function renderOverview(data) {
+      const s = data.summary || {};
+      const d = data.diversity || {};
+      const metrics = [
+        ['Requests', s.totalRequests],
+        ['Unique Users', s.uniqueUsers],
+        ['LLM Used', s.llmUsedRequests],
+        ['Errors', s.errorRequests],
+        ['Rate Limited', s.rateLimitedRequests],
+        ['Active Users', d.activeUsers],
+        ['New Users', d.newUsers],
+        ['Returning Users', d.returningUsers]
+      ];
+
+      document.getElementById('summary-metrics').innerHTML = metrics.map(([label, value]) => (
+        '<div class="metric"><div class="label">' + escapeHtml(label) + '</div><div class="value">' + escapeHtml(String(value || 0)) + '</div></div>'
+      )).join('');
+
+      document.getElementById('lang-tags').innerHTML = (data.byLanguage || []).map((x) => (
+        '<span class="tag">' + escapeHtml(x.lang) + ': ' + escapeHtml(String(x.count || 0)) + '</span>'
+      )).join('') || '<span class="muted">No language data.</span>';
+
+      document.getElementById('status-tags').innerHTML = (data.byStatus || []).map((x) => (
+        '<span class="tag">' + escapeHtml(x.status) + ': ' + escapeHtml(String(x.count || 0)) + '</span>'
+      )).join('') || '<span class="muted">No status data.</span>';
+
+      document.getElementById('hourly-body').innerHTML = (data.hourlyUsage || []).map((row) => (
+        '<tr><td>' + escapeHtml(row.hour || '') + '</td><td>' + escapeHtml(String(row.count || 0)) + '</td></tr>'
+      )).join('') || '<tr><td colspan="2">No hourly data.</td></tr>';
+
+      document.getElementById('daily-body').innerHTML = (data.dailyUsage14d || []).map((row) => (
+        '<tr><td>' + escapeHtml(row.day || '') + '</td><td>' + escapeHtml(String(row.count || 0)) + '</td><td>' + escapeHtml(String(row.uniqueUsers || 0)) + '</td></tr>'
+      )).join('') || '<tr><td colspan="3">No daily data.</td></tr>';
+    }
+
+    async function loadInteractions() {
+      const hours = Number(document.getElementById('interactions-hours').value || '168');
+      const pageSize = Number(document.getElementById('interactions-page-size').value || '25');
+      const statusEl = document.getElementById('interactions-status');
+      statusEl.textContent = 'Loading...';
+
+      try {
+        const url = '/api/interactions?hours=' + encodeURIComponent(String(hours)) +
+          '&page=' + encodeURIComponent(String(state.interactionsPage)) +
+          '&pageSize=' + encodeURIComponent(String(pageSize));
+        const res = await fetch(url);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Failed to load interactions');
+        state.interactionsTotal = Number(data.total || 0);
+        renderInteractions(data);
+        statusEl.textContent = 'Updated ' + formatTs(data.generatedAtSec);
+      } catch (err) {
+        statusEl.textContent = 'Error: ' + (err && err.message ? err.message : String(err));
+      }
+    }
+
+    function renderInteractions(data) {
+      const rows = Array.isArray(data.rows) ? data.rows : [];
+      const start = (data.page - 1) * data.pageSize + 1;
+      const end = Math.min(data.total, start + rows.length - 1);
+      document.getElementById('interactions-page-info').textContent =
+        'Showing ' + (rows.length ? (start + '-' + end) : '0') + ' of ' + data.total +
+        ' records (last ' + data.windowHours + 'h)';
+
+      const html = rows.map((row) => {
+        const outputText = row.outputText || '';
+        const rawOut = row.outputRaw ? JSON.stringify(row.outputRaw, null, 2) : '{}';
+        return '<div class="panel" style="margin-bottom:0.7rem;">' +
+          '<div class="row" style="margin-bottom:0.4rem;">' +
+          '<span class="tag">#' + escapeHtml(String(row.id || '')) + '</span>' +
+          '<span class="tag">' + escapeHtml(row.lang || '') + '</span>' +
+          '<span class="tag">status: ' + escapeHtml(row.status || '') + ' (' + escapeHtml(String(row.httpStatus || 0)) + ')</span>' +
+          '<span class="tag">llm: ' + (row.llmUsed ? 'yes' : 'no') + '</span>' +
+          '<span class="muted">' + escapeHtml(formatTs(row.createdAtSec)) + '</span>' +
+          '</div>' +
+          '<div class="muted">anon_id: ' + escapeHtml(row.anonId || '') + '</div>' +
+          '<h4>Input</h4>' +
+          '<pre>' + escapeHtml(row.questionText || '') + '</pre>' +
+          '<h4>Output shown to user</h4>' +
+          '<pre>' + escapeHtml(outputText) + '</pre>' +
+          '<details style="margin-top:0.4rem;"><summary>Raw response JSON</summary><pre>' + escapeHtml(rawOut) + '</pre></details>' +
+          (row.llmError ? '<p class="muted">LLM error: ' + escapeHtml(row.llmError) + '</p>' : '') +
+          '</div>';
+      }).join('');
+
+      document.getElementById('interactions-list').innerHTML = html || '<p class="muted">No interactions found.</p>';
+    }
+
+    function formatTs(sec) {
+      const ms = Number(sec || 0) * 1000;
+      if (!ms) return '';
+      return new Date(ms).toLocaleString();
+    }
+
+    function escapeHtml(text) {
+      return String(text || '')
+        .replaceAll('&', '&amp;')
+        .replaceAll('<', '&lt;')
+        .replaceAll('>', '&gt;')
+        .replaceAll('"', '&quot;')
+        .replaceAll("'", '&#39;');
+    }
+
+    loadOverview();
+    loadInteractions();
+  </script>
+</body>
+</html>
