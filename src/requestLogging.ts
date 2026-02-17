@@ -12,6 +12,11 @@ export type RequestLogRecord = {
   llmError?: string;
   retrievedCount?: number;
   responsePayload?: unknown;
+  moderationStatus?: string;
+  moderationFlagged?: boolean;
+  moderationInput?: string;
+  moderationOutput?: unknown;
+  moderationError?: string;
 };
 
 export async function logGuidanceRequest(request: Request, env: Env, record: RequestLogRecord): Promise<void> {
@@ -32,8 +37,9 @@ export async function logGuidanceRequest(request: Request, env: Env, record: Req
     await env.DB.prepare(
       `INSERT INTO guidance_request (
          public_id, anon_id, created_at, lang, question_text, status, http_status,
-         ip_hash, user_agent_hash, llm_used, llm_error, retrieved_count, response_json
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+         ip_hash, user_agent_hash, llm_used, llm_error, retrieved_count, response_json,
+         moderation_status, moderation_flagged, moderation_input, moderation_output, moderation_error
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
       .bind(
         record.publicId || null,
@@ -48,7 +54,12 @@ export async function logGuidanceRequest(request: Request, env: Env, record: Req
         typeof record.llmUsed === "boolean" ? (record.llmUsed ? 1 : 0) : null,
         sanitizeError(record.llmError),
         typeof record.retrievedCount === "number" ? Math.max(0, record.retrievedCount) : null,
-        serializeResponsePayload(record.responsePayload)
+        serializeResponsePayload(record.responsePayload),
+        sanitizeModerationStatus(record.moderationStatus),
+        typeof record.moderationFlagged === "boolean" ? (record.moderationFlagged ? 1 : 0) : null,
+        sanitizeModerationInput(record.moderationInput),
+        serializeModerationOutput(record.moderationOutput),
+        sanitizeModerationError(record.moderationError)
       )
       .run();
   } catch (err) {
@@ -119,4 +130,28 @@ function serializeResponsePayload(value: unknown): string | null {
   } catch {
     return null;
   }
+}
+
+function sanitizeModerationStatus(value: string | undefined): string | null {
+  if (!value) return null;
+  return value.slice(0, 40);
+}
+
+function sanitizeModerationInput(value: string | undefined): string | null {
+  if (!value) return null;
+  return value.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim().slice(0, 3000);
+}
+
+function serializeModerationOutput(value: unknown): string | null {
+  if (value === undefined) return null;
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return null;
+  }
+}
+
+function sanitizeModerationError(value: string | undefined): string | null {
+  if (!value) return null;
+  return value.slice(0, 1000);
 }

@@ -2,6 +2,7 @@ export interface Env {
   DB: D1Database;
   OPENAI_API_KEY?: string;
   OPENAI_MODEL?: string;
+  OPENAI_MODERATION_MODEL?: string;
   OPENAI_TIMEOUT_MS?: string;
   CACHE_TTL_SEC?: string;
   RETRIEVAL_CACHE_TTL_SEC?: string;

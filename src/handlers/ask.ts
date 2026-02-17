@@ -8,6 +8,7 @@ import { json, isJsonRequest, shouldExposeDebugMeta } from "../shared/http";
 import { generateGuidance } from "../guidance";
 import { getGuidanceCache, setGuidanceCache } from "../guidanceCache";
 import { ensureAnonIdentity } from "../identity";
+import { moderateQuestionInput, type ModerationResult } from "../moderation";
 import { logGuidanceRequest } from "../requestLogging";
 import { getAyatByIds, retrieveAyat } from "../retrieval";
 import { getRetrievalCache, setRetrievalCache } from "../retrievalCache";
@@ -20,6 +21,8 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
   let rawQuestion = "";
   let requestLang = "tr";
   let publicQueryId: string | null = null;
+  let moderationShareAllowed = false;
+  let moderationResult: ModerationResult | null = null;
 
   function getOrCreatePublicQueryId(): string {
     if (!publicQueryId) {
@@ -46,7 +49,7 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
     meta?: { llmUsed?: boolean; llmError?: string; retrievedCount?: number },
     extraHeaders?: Record<string, string>
   ): Promise<Response> {
-    const shareable = meta?.llmUsed === true;
+    const shareable = meta?.llmUsed === true && moderationShareAllowed;
     const payloadWithId = withPublicQueryId(payload, shareable);
     await logGuidanceRequest(request, env, {
       publicId: shareable ? getOrCreatePublicQueryId() : undefined,
@@ -59,6 +62,11 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
       llmError: meta?.llmError,
       retrievedCount: meta?.retrievedCount,
       responsePayload: payloadWithId,
+      moderationStatus: moderationResult?.outcome,
+      moderationFlagged: moderationResult?.flagged,
+      moderationInput: moderationResult?.input,
+      moderationOutput: moderationResult?.output,
+      moderationError: moderationResult?.error,
     });
     return json(payloadWithId, status, { ...baseHeaders, ...(extraHeaders || {}) });
   }
@@ -106,6 +114,7 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
   }
   question = question.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim();
   rawQuestion = question;
+
   const turnstileResult = await verifyTurnstile(turnstileToken, request, env);
   if (!turnstileResult.ok) {
     const statusCode = turnstileResult.statusCode || 403;
@@ -115,6 +124,29 @@ export async function handleAsk(request: Request, env: Env): Promise<Response> {
       "turnstile_failed"
     );
   }
+
+  moderationResult = await moderateQuestionInput(question, env);
+  if (moderationResult.outcome === "blocked") {
+    return respond(
+      {
+        error: requestLang === "tr"
+          ? "Girdiniz güvenlik kurallarını ihlal ediyor. Lütfen saygılı bir dille yeniden ifade edin."
+          : "Your input violates safety rules. Please rephrase respectfully.",
+      },
+      400,
+      "blocked_content"
+    );
+  }
+  if (moderationResult.outcome === "unavailable") {
+    return respond(
+      {
+        error: "Moderation service unavailable. Please try again shortly.",
+      },
+      503,
+      "moderation_unavailable"
+    );
+  }
+  moderationShareAllowed = moderationResult.outcome === "passed";
 
   const model = env.OPENAI_MODEL || "gpt-4.1-nano";
   const canUseCache = Boolean(env.OPENAI_API_KEY);

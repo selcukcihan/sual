@@ -179,7 +179,12 @@ async function getInteractions({ page, pageSize, hours }) {
       llm_used,
       llm_error,
       retrieved_count,
-      response_json
+      response_json,
+      moderation_status,
+      moderation_flagged,
+      moderation_input,
+      moderation_output,
+      moderation_error
     FROM guidance_request
     WHERE created_at >= ${sinceSec}
     ORDER BY created_at DESC
@@ -207,6 +212,11 @@ async function getInteractions({ page, pageSize, hours }) {
         llmUsed: r.llm_used === 1,
         llmError: r.llm_error ? String(r.llm_error) : null,
         retrievedCount: r.retrieved_count === null || r.retrieved_count === undefined ? null : toInt(r.retrieved_count),
+        moderationStatus: r.moderation_status ? String(r.moderation_status) : null,
+        moderationFlagged: r.moderation_flagged === 1,
+        moderationInput: r.moderation_input ? String(r.moderation_input) : null,
+        moderationOutput: parseResponsePayload(r.moderation_output),
+        moderationError: r.moderation_error ? String(r.moderation_error) : null,
         outputText: extractOutputText(parsed),
         outputRaw: parsed,
       };

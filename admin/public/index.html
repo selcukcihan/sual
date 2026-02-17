@@ -348,6 +348,7 @@
           '<span class="tag">' + escapeHtml(row.lang || '') + '</span>' +
           '<span class="tag">status: ' + escapeHtml(row.status || '') + ' (' + escapeHtml(String(row.httpStatus || 0)) + ')</span>' +
           '<span class="tag">llm: ' + (row.llmUsed ? 'yes' : 'no') + '</span>' +
+          '<span class="tag">moderation: ' + escapeHtml(row.moderationStatus || 'n/a') + '</span>' +
           '<span class="muted">' + escapeHtml(formatTs(row.createdAtSec)) + '</span>' +
           '</div>' +
           '<div class="muted">anon_id: ' + escapeHtml(row.anonId || '') + '</div>' +
@@ -356,6 +357,9 @@
           '<h4>Output shown to user</h4>' +
           '<pre>' + escapeHtml(outputText) + '</pre>' +
           '<details style="margin-top:0.4rem;"><summary>Raw response JSON</summary><pre>' + escapeHtml(rawOut) + '</pre></details>' +
+          '<details style="margin-top:0.4rem;"><summary>Moderation details</summary><pre>' +
+          escapeHtml(JSON.stringify({ flagged: row.moderationFlagged, input: row.moderationInput, output: row.moderationOutput, error: row.moderationError }, null, 2)) +
+          '</pre></details>' +
           (row.llmError ? '<p class="muted">LLM error: ' + escapeHtml(row.llmError) + '</p>' : '') +
           '</div>';
       }).join('');
