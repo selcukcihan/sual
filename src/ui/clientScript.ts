@@ -351,6 +351,9 @@ export function renderClientScript(params: ClientScriptParams): string {
       } catch (err) {
         statusEl.textContent = t().requestFailed + ': ' + (err && err.message ? err.message : String(err));
       } finally {
+        if (TURNSTILE_ENABLED) {
+          resetTurnstileWidget();
+        }
         submit.disabled = false;
         setLoading(false);
       }
