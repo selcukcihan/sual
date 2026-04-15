@@ -17,6 +17,10 @@ export interface Env {
   TURNSTILE_EXPECTED_HOSTNAME?: string;
   TURNSTILE_EXPECTED_ACTION?: string;
   ALLOW_INSECURE_LOCAL_BYPASS?: string;
+  ABUSE_CONTROL_ENABLED?: string;
+  ABUSE_CONTROL_THRESHOLD?: string;
+  ABUSE_CONTROL_BLOCK_MINUTES?: string;
+  ABUSE_CONTROL_LOCAL_BYPASS?: string;
 }
 
 export type AyahRow = {
