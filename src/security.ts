@@ -2,6 +2,7 @@ import { getClientIp, isProduction, parsePositiveInt } from "./shared/http";
 import type { Env } from "./shared/types";
 
 export type TurnstileResult = { ok: boolean; statusCode?: number; message?: string };
+export type AbuseCheckResult = { allowed: boolean; blocked: boolean; score: number; threshold: number; reason?: string; retryAfterSec?: number };
 
 export async function verifyTurnstile(token: string, request: Request, env: Env): Promise<TurnstileResult> {
   const production = isProduction(env);
@@ -101,51 +102,53 @@ export async function verifyTurnstile(token: string, request: Request, env: Env)
   return { ok: true };
 }
 
-export type RateLimitResult = {
-  allowed: boolean;
-  count: number;
-  max: number;
-  windowSec: number;
-  retryAfterSec: number;
-};
-
-export async function applyRateLimit(request: Request, env: Env): Promise<RateLimitResult> {
-  const ip = getClientIp(request);
-  const ipKey = await stableRateLimitKey(ip, env.RATE_LIMIT_SALT || "");
-  const max = parsePositiveInt(env.RATE_LIMIT_MAX, 30);
-  const windowSec = parsePositiveInt(env.RATE_LIMIT_WINDOW_SEC, 60);
-  const nowSec = Math.floor(Date.now() / 1000);
-  const windowStart = Math.floor(nowSec / windowSec) * windowSec;
-  const windowKey = `${ipKey}:${windowStart}`;
-  const expiresAt = windowStart + windowSec + 5;
-
-  if (Math.random() < 0.05) {
-    await env.DB.prepare(`DELETE FROM rate_limit WHERE expires_at < ?`).bind(nowSec).run();
+export async function checkAbuseControls(request: Request, env: Env): Promise<AbuseCheckResult> {
+  const production = isProduction(env);
+  if (!production && isTruthy(env.ABUSE_CONTROL_LOCAL_BYPASS)) {
+    return { allowed: true, blocked: false, score: 0, threshold: parsePositiveInt(env.ABUSE_CONTROL_THRESHOLD, 8) };
   }
 
-  const upsertSql = `
-    INSERT INTO rate_limit (id, ip, window_start, count, expires_at)
-    VALUES (?, ?, ?, 1, ?)
-    ON CONFLICT(id) DO UPDATE SET count = count + 1
-    RETURNING count
-  `;
-  const result = await env.DB.prepare(upsertSql).bind(windowKey, ipKey, windowStart, expiresAt).first<{ count: number }>();
-  const count = Number(result?.count || 1);
-  const retryAfterSec = Math.max(1, windowStart + windowSec - nowSec);
-  return {
-    allowed: count <= max,
-    count,
-    max,
-    windowSec,
-    retryAfterSec,
-  };
+  const enabled = production || isTruthy(env.ABUSE_CONTROL_ENABLED);
+  const threshold = parsePositiveInt(env.ABUSE_CONTROL_THRESHOLD, 8);
+  const blockMinutes = parsePositiveInt(env.ABUSE_CONTROL_BLOCK_MINUTES, 30);
+  const nowSec = Math.floor(Date.now() / 1000);
+  const ip = getClientIp(request);
+  const score = scoreAbuse(request, ip);
+
+  if (!enabled) {
+    return { allowed: true, blocked: false, score, threshold };
+  }
+
+  await env.DB.prepare(`DELETE FROM abuse_control WHERE expires_at < ?`).bind(nowSec).run();
+  const existing = await env.DB.prepare(`SELECT reason, score, expires_at FROM abuse_control WHERE ip = ? AND expires_at >= ? ORDER BY expires_at DESC LIMIT 1`).bind(ip, nowSec).first<{ reason: string; score: number; expires_at: number }>();
+  if (existing) {
+    return { allowed: false, blocked: true, score: existing.score, threshold, reason: existing.reason, retryAfterSec: Math.max(1, existing.expires_at - nowSec) };
+  }
+
+  if (score >= threshold && ip !== "unknown") {
+    const expiresAt = nowSec + blockMinutes * 60;
+    const reason = score >= threshold + 4 ? "high_abuse_score" : "abuse_score";
+    await env.DB.prepare(`INSERT OR REPLACE INTO abuse_control (id, ip, reason, score, created_at, expires_at) VALUES (?, ?, ?, ?, ?, ?)`)
+      .bind(crypto.randomUUID(), ip, reason, score, nowSec, expiresAt)
+      .run();
+    return { allowed: false, blocked: true, score, threshold, reason, retryAfterSec: blockMinutes * 60 };
+  }
+
+  return { allowed: true, blocked: false, score, threshold };
 }
 
-async function stableRateLimitKey(ip: string, salt: string): Promise<string> {
-  const input = `${salt}|${ip || "unknown"}`;
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(input));
-  const bytes = Array.from(new Uint8Array(digest)).slice(0, 16);
-  return bytes.map((b) => b.toString(16).padStart(2, "0")).join("");
+function scoreAbuse(request: Request, ip: string): number {
+  let score = 0;
+  const ua = (request.headers.get("user-agent") || "").toLowerCase();
+  const accept = (request.headers.get("accept") || "").toLowerCase();
+  const origin = (request.headers.get("origin") || "").toLowerCase();
+  const referer = (request.headers.get("referer") || "").toLowerCase();
+
+  if (!ua || ua.includes("curl") || ua.includes("wget") || ua.includes("python") || ua.includes("httpie")) score += 4;
+  if (!accept.includes("application/json")) score += 1;
+  if (!origin && !referer) score += 1;
+  if (ip === "unknown") score += 2;
+  return score;
 }
 
 function isTruthy(value: string | undefined): boolean {

@@ -119,6 +119,10 @@ Optional safety env vars:
 - `TURNSTILE_SITE_KEY` and `TURNSTILE_SECRET_KEY` to enforce bot checks on `/api/ask`.
 - `TURNSTILE_EXPECTED_HOSTNAME` and `TURNSTILE_EXPECTED_ACTION` for strict Turnstile verification.
 - `ALLOW_INSECURE_LOCAL_BYPASS=true` to bypass Turnstile in local/dev only (ignored in production).
+- `ABUSE_CONTROL_ENABLED=true` to enable temporary denylist checks.
+- `ABUSE_CONTROL_THRESHOLD=8` to tune the heuristic score that triggers a block.
+- `ABUSE_CONTROL_BLOCK_MINUTES=30` to control how long temporary blocks last.
+- `ABUSE_CONTROL_LOCAL_BYPASS=true` to keep local/dev traffic unblocked while testing.
 
 5. Run the Worker locally (frontend + API):
 
@@ -158,29 +162,5 @@ Response includes:
 - API enforces JSON content type for `/api/ask`.
 - API rejects oversized request bodies (`413`) to reduce abuse risk.
 - Per-IP rate limiting is stored in D1 (`rate_limit` table).
-- Rate-limit keys are SHA-256 hashed (with optional `RATE_LIMIT_SALT`).
-- Anonymous users are tracked with signed `sual_uid` cookies (no login required).
-- User input requests are logged in D1 (`guidance_request`) and linked to pseudonymous users (`anon_user`).
-- Repeated prompts are served from D1 cache (`guidance_cache`) to avoid repeated LLM calls (scoped per anonymous user).
-- Top ayah retrieval results are also cached in D1 (`retrieval_cache`) for faster repeated semantic lookups.
-- Turnstile token is verified server-side before retrieval/LLM work.
-- Turnstile verification checks success + expected hostname + expected action.
-- In `APP_ENV=production`, Turnstile becomes mandatory.
-- Local bypass is available only when not in production (`ALLOW_INSECURE_LOCAL_BYPASS=true`).
-- LLM output is sanitized and citations are allow-listed against retrieved ayat only.
-- Prompt instructs model to treat both user input and evidence as untrusted, data-only context.
-- In production, avoid exposing debug metadata and detailed upstream error bodies.
-
-## Next steps for production quality
-
-1. Import full Quran translation into `ayah` table.
-2. Add hybrid retrieval (FTS + vector) only if needed.
-3. Add evaluation set for retrieval quality and hallucination checks.
-4. Add monitoring/alerts (request volume, 429 rate, OpenAI failures, token usage).
-5. Add optional abuse sink controls (IP reputation, temporary denylist).
-
-## Cost profile (MVP)
-
-- Worker + D1 often free at low traffic.
-- Main variable cost is LLM usage.
-- Keeping retrieval in D1 FTS avoids vector infra cost in v1.
+- Temporary abuse controls can deny obviously automated traffic before retrieval/LLM work.
+- Temporary blocks expire automatically and can be bypassed in local/dev with `ABUSE_CONTROL_LOCAL_BYPASS=true`.
